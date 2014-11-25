@@ -1,0 +1,32 @@
+<package>
+  <name>wsg_50</name>
+  <version>1.0.0</version>
+  <description>
+
+     wsg_50
+
+  </description>
+  <author>robotnik</author>
+  <maintainer email="mustermann@fictional.de">Add Maintainer here</maintainer>
+  <license>BSD</license>
+
+  <url>http://ros.org/wiki/wsg_50</url>
+
+  <!-- Dependencies which this package needs to build itself. -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- Dependencies needed to compile this package. -->
+  <build_depend>roscpp</build_depend>
+  <build_depend>std_srvs</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>wsg_50_common</build_depend>
+
+  <!-- Dependencies needed after this package is compiled. -->
+  <run_depend>roscpp</run_depend>
+  <run_depend>std_srvs</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>wsg_50_common</run_depend>
+
+</package>
+
+

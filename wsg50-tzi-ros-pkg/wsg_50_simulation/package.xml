@@ -1,0 +1,31 @@
+<package>
+  <name>wsg_50_simulation</name>
+  <version>1.0.0</version>
+  <description>
+     Package for the WSG-50 simulation in Gazebo. Contains the meshes and urdf for the visualization and two programs, one for fake the real gripper services and other for teleoperate the gripper with the keyboard.
+  </description>
+  <author>Robotnik Automation SLL</author>
+  <maintainer email="mustermann@fictional.de">Add Maintainer here</maintainer>
+  <license>BSD</license>
+  <url>http://ros.org/wiki/wsg50-ros-pkg/wsg_50_simulation</url>
+
+  <!-- Dependencies which this package needs to build itself. -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- Dependencies needed to compile this package. -->
+  <build_depend>urdf</build_depend>
+  <build_depend>std_srvs</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>wsg_50_common</build_depend>
+  <build_depend>roscpp</build_depend>
+
+  <!-- Dependencies needed after this package is compiled. -->
+  <run_depend>urdf</run_depend>
+  <run_depend>std_srvs</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>wsg_50_common</run_depend>
+  <run_depend>roscpp</run_depend>
+
+</package>
+
+
