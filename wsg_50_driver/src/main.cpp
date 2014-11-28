@@ -53,13 +53,13 @@
 #include <ros/ros.h>
 #include "std_msgs/String.h"
 #include "std_srvs/Empty.h"
-#include "wsg_50_common/Status.h"
-#include "wsg_50_common/Move.h"
-#include "wsg_50_common/Conf.h"
-#include "wsg_50_common/Incr.h"
-#include "wsg_50_common/Cmd.h"
-#include "wsg_50_common/PositionCmd.h"
-#include "wsg_50_common/SpeedCmd.h"
+#include "wsg_50_msgs/Status.h"
+#include "wsg_50_msgs/Move.h"
+#include "wsg_50_msgs/Conf.h"
+#include "wsg_50_msgs/Incr.h"
+#include "wsg_50_msgs/Cmd.h"
+#include "wsg_50_msgs/PositionCmd.h"
+#include "wsg_50_msgs/SpeedCmd.h"
 
 #include "sensor_msgs/JointState.h"
 #include "std_msgs/Float32.h"
@@ -105,7 +105,7 @@ float g_goal_position = NAN, g_goal_speed = NAN, g_speed = 10.0;
 //------------------------------------------------------------------------
 
 
-bool moveSrv(wsg_50_common::Move::Request &req, wsg_50_common::Move::Response &res)
+bool moveSrv(wsg_50_msgs::Move::Request &req, wsg_50_msgs::Move::Response &res)
 {
 	if ( (req.width >= 0.0 && req.width <= 110.0) && (req.speed > 0.0 && req.speed <= 420.0) ){
   		ROS_INFO("Moving to %f position at %f mm/s.", req.width, req.speed);
@@ -123,7 +123,7 @@ bool moveSrv(wsg_50_common::Move::Request &req, wsg_50_common::Move::Response &r
   	return true;
 }
 
-bool graspSrv(wsg_50_common::Move::Request &req, wsg_50_common::Move::Response &res)
+bool graspSrv(wsg_50_msgs::Move::Request &req, wsg_50_msgs::Move::Response &res)
 {
 	if ( (req.width >= 0.0 && req.width <= 110.0) && (req.speed > 0.0 && req.speed <= 420.0) ){
         ROS_INFO("Grasping object at %f with %f mm/s.", req.width, req.speed);
@@ -142,7 +142,7 @@ bool graspSrv(wsg_50_common::Move::Request &req, wsg_50_common::Move::Response &
   	return true;
 }
 
-bool incrementSrv(wsg_50_common::Incr::Request &req, wsg_50_common::Incr::Response &res)
+bool incrementSrv(wsg_50_msgs::Incr::Request &req, wsg_50_msgs::Incr::Response &res)
 {
 	if (req.direction == "open"){
 	
@@ -185,7 +185,7 @@ bool incrementSrv(wsg_50_common::Incr::Request &req, wsg_50_common::Incr::Respon
 	return true;
 }
 
-bool releaseSrv(wsg_50_common::Move::Request &req, wsg_50_common::Move::Response &res)
+bool releaseSrv(wsg_50_msgs::Move::Request &req, wsg_50_msgs::Move::Response &res)
 {
 	if ( (req.width >= 0.0 && req.width <= 110.0) && (req.speed > 0.0 && req.speed <= 420.0) ){
   		ROS_INFO("Releasing to %f position at %f mm/s.", req.width, req.speed);
@@ -218,13 +218,13 @@ bool stopSrv(std_srvs::Empty::Request &req, std_srvs::Empty::Request &res)
 	return true;
 }
 
-bool setAccSrv(wsg_50_common::Conf::Request &req, wsg_50_common::Conf::Response &res)
+bool setAccSrv(wsg_50_msgs::Conf::Request &req, wsg_50_msgs::Conf::Response &res)
 {
 	setAcceleration(req.val);
 	return true;
 }
 
-bool setForceSrv(wsg_50_common::Conf::Request &req, wsg_50_common::Conf::Response &res)
+bool setForceSrv(wsg_50_msgs::Conf::Request &req, wsg_50_msgs::Conf::Response &res)
 {
 	setGraspingForceLimit(req.val);
 	return true;
@@ -237,7 +237,7 @@ bool ackSrv(std_srvs::Empty::Request &req, std_srvs::Empty::Request &res)
 }
 
 /** \brief Callback for goal_position topic (in appropriate modes) */
-void position_cb(const wsg_50_common::PositionCmd::ConstPtr& msg)
+void position_cb(const wsg_50_msgs::PositionCmd::ConstPtr& msg)
 {
     g_speed = msg->speed; 
     g_goal_position = msg->pos;
@@ -255,7 +255,7 @@ void position_cb(const wsg_50_common::PositionCmd::ConstPtr& msg)
 }
 
 /** \brief Callback for goal_speed topic (in appropriate modes) */
-void speed_cb(const wsg_50_common::SpeedCmd::ConstPtr& msg)
+void speed_cb(const wsg_50_msgs::SpeedCmd::ConstPtr& msg)
 {
     g_goal_speed = msg->speed;
     g_speed = msg->speed;
@@ -312,7 +312,7 @@ void timer_cb(const ros::TimerEvent& ev)
         return;
 
 	// ==== Status msg ====
-	wsg_50_common::Status status_msg;
+	wsg_50_msgs::Status status_msg;
 	status_msg.status = info.state_text;
 	status_msg.width = info.position;
 	status_msg.speed = info.speed;
@@ -360,7 +360,7 @@ void read_thread(int interval_ms)
     std::string names[3] = { "opening", "speed", "force" };
 
     // Prepare messages
-    wsg_50_common::Status status_msg;
+    wsg_50_msgs::Status status_msg;
     status_msg.status = "UNKNOWN";
 
     sensor_msgs::JointState joint_states;
@@ -590,7 +590,7 @@ int main( int argc, char **argv )
             sub_speed = nh.subscribe("goal_speed", 5, speed_cb);
 
 		// Publisher
-		g_pub_state = nh.advertise<wsg_50_common::Status>("status", 1000);
+		g_pub_state = nh.advertise<wsg_50_msgs::Status>("status", 1000);
 		g_pub_joint = nh.advertise<sensor_msgs::JointState>("/joint_states", 10);
         if (g_mode_script || g_mode_periodic)
             g_pub_moving = nh.advertise<std_msgs::Bool>("moving", 10);
