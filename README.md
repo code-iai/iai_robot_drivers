@@ -51,7 +51,8 @@ Requests periodic updates of the gripper state (position, speed, force; less dat
 The services are disabled.
 
 #### Gripper script
-The script *cmd_measure.lua* must be running on the gripper for the script mode. It allows for non-blocking position and velocity control and responds with the current position, speed, motor force and up to two FMF finger forces. The custom commands 0xB0 (read only), 0xB1 (read, goal position and speed), 0xB2 (read, goal speed) are used. Tested with firmware version 2.6.4. There have been minor API changes since 1.x.
+The script *cmd_measure.lua* must be running on the gripper for the script mode. It allows for non-blocking position and velocity control and responds with the current position, speed, motor force and up to two FMF finger forces. The custom commands 0xB0 (read only), 0xB1 (read, goal position and speed), 0xB2 (read, goal speed) are used. Tested with firmware version 2.6.4. There have been minor API changes since 1.x.<br />
+To automatically run the script on startup of the gripper, open the gripper webpage and use the *File Manager* under *Scripting* to upload the file *cmd_measure.lua* to the gripper. Now select "Enable Startup Script" under Settings->System->StartupScript. In the following popup select the script you just uploaded.
 
 
 ## Node wsg\_50_can

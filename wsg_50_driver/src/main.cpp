@@ -58,6 +58,8 @@
 #include "wsg_50_common/Conf.h"
 #include "wsg_50_common/Incr.h"
 #include "wsg_50_common/Cmd.h"
+#include "wsg_50_common/PositionCmd.h"
+#include "wsg_50_common/SpeedCmd.h"
 
 #include "sensor_msgs/JointState.h"
 #include "std_msgs/Float32.h"
@@ -235,9 +237,11 @@ bool ackSrv(std_srvs::Empty::Request &req, std_srvs::Empty::Request &res)
 }
 
 /** \brief Callback for goal_position topic (in appropriate modes) */
-void position_cb(const wsg_50_common::Cmd::ConstPtr& msg)
+void position_cb(const wsg_50_common::PositionCmd::ConstPtr& msg)
 {
-    g_speed = msg->speed; g_goal_position = msg->pos;
+    g_speed = msg->speed; 
+    g_goal_position = msg->pos;
+    setGraspingForceLimit(msg->force);
     // timer_cb() will send command to gripper
 
     if (g_mode_periodic) {
@@ -251,9 +255,11 @@ void position_cb(const wsg_50_common::Cmd::ConstPtr& msg)
 }
 
 /** \brief Callback for goal_speed topic (in appropriate modes) */
-void speed_cb(const std_msgs::Float32::ConstPtr& msg)
+void speed_cb(const wsg_50_common::SpeedCmd::ConstPtr& msg)
 {
-    g_goal_speed = msg->data; g_speed = msg->data;
+    g_goal_speed = msg->speed;
+    g_speed = msg->speed;
+    setGraspingForceLimit(msg->force);
     // timer_cb() will send command to gripper
 }
 
