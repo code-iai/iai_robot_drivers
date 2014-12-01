@@ -1,5 +1,6 @@
 # ROS package for Schunk WSG-50 Gripper
 Forked from: [https://github.com/nalt/wsg50-ros-pkg](https://github.com/nalt/wsg50-ros-pkg)
+
 Which was originally forked from: [https://code.google.com/p/wsg50-ros-pkg](https://code.google.com/p/wsg50-ros-pkg)
 
 Modifications of this repository:
