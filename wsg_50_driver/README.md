@@ -43,3 +43,7 @@ The service interface can still be used - yet, they are blocking the gripper com
 ### Gripper script
 The script *cmd_measure.lua* must be running on the gripper for the script mode. It allows for non-blocking position and velocity control and responds with the current position, speed, motor force and up to two FMF finger forces. The custom commands 0xB0 (read only), 0xB1 (read, goal position and speed), 0xB2 (read, goal speed) are used. Tested with firmware version 2.6.4. There have been minor API changes since 1.x.<br />
 To automatically run the script on startup of the gripper, open the gripper webpage and use the *File Manager* under *Scripting* to upload the file *cmd_measure.lua* to the gripper. Now select "Enable Startup Script" under Settings->System->StartupScript. In the following popup select the script you just uploaded.
+
+### Example usage: Sending commands to the gripper script from the shell
+This is how you can command the gripper to reach a target position, IF it has been configured to run in script mode:
+   ```rostopic pub /wsg_50_driver/goal_position wsg_50_msgs/PositionCmd '{pos: 40.0, speed: 200.0, force: 30.0}'```
