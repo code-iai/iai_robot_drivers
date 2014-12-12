@@ -90,6 +90,7 @@ ros::Publisher g_pub_state, g_pub_joint, g_pub_moving;
 bool g_ismoving = false;
 float g_goal_position = NAN, g_goal_speed = NAN, g_speed = 10.0;
    
+std::string l_finger_joint_name, r_finger_joint_name, reference_frame;
 //------------------------------------------------------------------------
 // Unit testing
 //------------------------------------------------------------------------
@@ -186,9 +187,13 @@ void timer_cb(const ros::TimerEvent& ev)
 	// ==== Joint state msg ====
 	sensor_msgs::JointState joint_states;
 	joint_states.header.stamp = ros::Time::now();;
-	joint_states.header.frame_id = "wsg_50_gripper_base_link";
-	joint_states.name.push_back("wsg_50_gripper_base_joint_gripper_left");
-	joint_states.name.push_back("wsg_50_gripper_base_joint_gripper_right");
+//	joint_states.header.frame_id = "wsg_50_gripper_base_link";
+//	joint_states.name.push_back("wsg_50_gripper_base_joint_gripper_left");
+//	joint_states.name.push_back("wsg_50_gripper_base_joint_gripper_right");
+	joint_states.header.frame_id = reference_frame;
+	joint_states.name.push_back(l_finger_joint_name);
+	joint_states.name.push_back(r_finger_joint_name);
+	
 	joint_states.position.resize(2);
 
 	joint_states.position[0] = -info.position/2000.0;
@@ -232,7 +237,10 @@ int main( int argc, char **argv )
    nh.param("protocol", protocol, std::string(""));
    nh.param("rate", rate, 1.0); // With custom script, up to 30Hz are possible
    nh.param("grasping_force", grasping_force, 0.0);
-
+   nh.param("l_finger_joint_name", l_finger_joint_name, std::string("wsg_50_gripper_base_joint_gripper_left"));
+   nh.param("r_finger_joint_name", r_finger_joint_name, std::string("wsg_50_gripper_base_joint_gripper_right"));
+   nh.param("reference_frame", reference_frame, std::string("wsg_50_gripper_base_link"));
+	
    if (protocol == "udp")
        use_udp = true;
    else

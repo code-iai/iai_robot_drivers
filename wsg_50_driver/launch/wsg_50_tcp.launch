@@ -7,6 +7,9 @@
     <param name="rate" type="double" value="30"/>
     <param name="grasping_force" type="double" value="20"/>
     <param name="protocol" type="string" value="tcp"/>
+    <param name="l_finger_joint_name" type="string" value="base_joint_gripper_left"/>
+    <param name="r_finger_joint_name" type="string" value="base_joint_gripper_right"/>
+    <param name="reference_frame" type="string" value=""/>
   </node>
 
 </launch>
