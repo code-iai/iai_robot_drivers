@@ -52,13 +52,13 @@
   <!-- GRIPPER LEFT -->
 
   <joint name="${name}_base_joint_gripper_left" type="prismatic">
-     <limit lower="-0.055" upper="-0.0027" effort="1.0" velocity="1.0"/>
+     <limit lower="-0.055" upper="-0.0027" effort="1.0" velocity="0.42"/>
      <origin xyz="0 0 0" rpy="0 0 0" />      <!--origin xyz="-0.0067 0 0.049" rpy="0 0 0" /-->
      <parent link="${name}_base_link"/>
      <child link="${name}_gripper_left" />
      <dynamics friction="100" damping="100" />
      <axis xyz="1 0 0"/>
-     <limit effort="100" velocity="100"/>
+     <!-- <limit effort="100" velocity="100"/> -->
   </joint>
 
   <transmission name="${name}_base_trans_left" type="pr2_mechanism_model/SimpleTransmission">
@@ -84,7 +84,7 @@
 	     <!--box size="0.0175 0.03 0.024"/-->
           </geometry>
           <material name="black">
-		<color rgba="0 0 0 0"/>
+		<color rgba="0 0 0 1"/>
       	  </material>
       </visual>
 
@@ -112,7 +112,7 @@
      <child link="${name}_finger_left" />
      <dynamics friction="100" damping="100" />
      <axis xyz="1 0 0"/>
-     <limit effort="100" velocity="100"/>
+     <!-- <limit effort="100" velocity="100"/> -->
   </joint>
 
   <link name="${name}_finger_left">
@@ -130,7 +130,7 @@
              <mesh filename="package://wsg_50_simulation/meshes/WSG-FMF.stl" scale="0.001 0.001 0.001"/>
           </geometry>
           <material name="black">
-		<color rgba="0 0 0 0"/>
+		<color rgba="0 0 0 1"/>
       	  </material>
       </visual>
 
@@ -152,13 +152,13 @@
   <!-- GRIPPER RIGHT -->
 
   <joint name="${name}_base_joint_gripper_right" type="prismatic">
-     <limit lower="0.0027" upper="0.055" effort="1.0" velocity="1.0"/>
+     <limit lower="0.0027" upper="0.055" effort="1.0" velocity="0.42"/>
      <origin xyz="0 0 0" rpy="0 0 3.14159" />
      <parent link="${name}_base_link"/>
      <child link="${name}_gripper_right" />
      <axis xyz="-1 0 0"/>
      <dynamics friction="100" damping="100" />
-     <limit effort="100" velocity="100"/>
+     <!-- <limit effort="100" velocity="100"/>-->
   </joint>
 
   <transmission name="${name}_base_trans_right" type="pr2_mechanism_model/SimpleTransmission">
@@ -184,7 +184,7 @@
 	     <!--box size="0.0175 0.03 0.024"/-->
           </geometry>
           <material name="black">
-		<color rgba="0 0 0 0"/>
+		<color rgba="0 0 0 1"/>
       	  </material>
       </visual>
 
@@ -229,7 +229,7 @@
              <mesh filename="package://wsg_50_simulation/meshes/WSG-FMF.stl" scale="0.001 0.001 0.001"/>
           </geometry>
           <material name="black">
-		<color rgba="0 0 0 0"/>
+		<color rgba="0 0 0 1"/>
       	  </material>
       </visual>
 
