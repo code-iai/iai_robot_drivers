@@ -23,9 +23,9 @@ Existing features are not discussed here - see original Wiki: [https://code.goog
 Only *set_acceleration* and *set_acknowledge* from [https://code.google.com/p/wsg50-ros-pkg/wiki/wsg_50](https://code.google.com/p/wsg50-ros-pkg/wiki/wsg_50). Services currently block the reception of state updates.
 
 ### Topics
-* *~/goal\_position [IN, wsg_50_msgs/PositionCmd]:*<br/>
+* *~/goal\_position [IN, iai_wsg_50_msgs/PositionCmd]:*<br/>
 Position goal; send target position in mm, speed and force
-* *~/goal\_speed [IN, wsg_50_msgs/PositionCmd]:*<br/>
+* *~/goal\_speed [IN, iai_wsg_50_msgs/PositionCmd]:*<br/>
 Velocity goal (in mm/s) and force; positive velocity values open the gripper
 * *~/moving [OUT, std_msgs/Bool]*:<br/>
 Signals a change in the motion state for position control. Can be used to wait for the end of a gripper movement. Does not work correctly yet for velocity control, since the gripper state register does not directly provide this information.
@@ -46,4 +46,4 @@ To automatically run the script on startup of the gripper, open the gripper webp
 
 ### Example usage: Sending commands to the gripper script from the shell
 This is how you can command the gripper to reach a target position, IF it has been configured to run in script mode:
-   ```rostopic pub /wsg_50_driver/goal_position wsg_50_msgs/PositionCmd '{pos: 40.0, speed: 200.0, force: 30.0}'```
+   ```rostopic pub /wsg_50_driver/goal_position iai_wsg_50_msgs/PositionCmd '{pos: 40.0, speed: 200.0, force: 30.0}'```
