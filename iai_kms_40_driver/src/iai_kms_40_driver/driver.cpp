@@ -11,9 +11,9 @@ namespace iai_kms_40_driver
   {
   }
 
-  bool KMS40Driver::init()
+  bool KMS40Driver::init(const std::string& ip, const std::string port)
   {
-    return socket_conn_.open();
+    return socket_conn_.open(ip, port);
   }
 
   void KMS40Driver::getTemperature()

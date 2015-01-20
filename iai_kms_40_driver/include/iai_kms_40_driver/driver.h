@@ -13,7 +13,7 @@ namespace iai_kms_40_driver
       KMS40Driver();
       ~KMS40Driver();
 
-      bool init();
+      bool init(const std::string& ip, const std::string port);
 
       void getTemperature();
       void getSingleWrench();

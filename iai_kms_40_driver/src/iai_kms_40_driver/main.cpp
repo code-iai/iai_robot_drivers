@@ -13,7 +13,7 @@ int main(int argc, char **argv)
   ROS_INFO("Running kms40 standalone node.\n");
 
   KMS40Driver my_driver;
-  if(!my_driver.init())
+  if(!my_driver.init("192.168.100.175", "1000"))
 //    ROS_ERROR("Error initializing kms40 driver.");
 std::cout << "Error initializing kms40 driver.\n";
 

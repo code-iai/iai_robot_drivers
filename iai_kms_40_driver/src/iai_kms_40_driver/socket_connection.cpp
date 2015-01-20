@@ -16,7 +16,7 @@ namespace iai_kms_40_driver
 
   }
 
-  bool SocketConnection::open()
+  bool SocketConnection::open(const std::string& ip, const std::string port)
   {
     // getting host info
     struct addrinfo host_info;
@@ -24,7 +24,7 @@ namespace iai_kms_40_driver
     memset(&host_info, 0, sizeof(host_info));
     host_info.ai_family = AF_UNSPEC;
     host_info.ai_socktype = SOCK_STREAM;
-    int status = getaddrinfo("192.168.1.30", "1000", &host_info, &host_info_list);
+    int status = getaddrinfo(ip.c_str(), port.c_str(), &host_info, &host_info_list);
  
     if(status != 0)
     {
