@@ -1,10 +1,8 @@
 #ifndef IAI_KMS_40_DRIVER_DRIVER_H_
 #define IAI_KMS_40_DRIVER_DRIVER_H_
 
-//#include <netdb.h>
-
-#include <string>
 #include <iai_kms_40_driver/socket_connection.hpp>
+#include <iai_kms_40_driver/wrench.hpp>
 
 namespace iai_kms_40_driver
 {
@@ -22,6 +20,7 @@ namespace iai_kms_40_driver
 
     private:
       SocketConnection socket_conn_;;
+      Wrench last_wrench_;
   };
 
 }
