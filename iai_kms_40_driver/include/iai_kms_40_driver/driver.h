@@ -21,7 +21,6 @@ namespace iai_kms_40_driver
 
 
     private:
-      struct addrinfo* host_info_list_;
       int socket_fd_;
 
       char readByte();
