@@ -12,9 +12,6 @@ namespace iai_kms_40_driver
 
   KMS40Driver::~KMS40Driver()
   {
-    if(host_info_list_)
-      freeaddrinfo(host_info_list_);
-
     if(socket_fd_ != -1)
       close(socket_fd_);
   }
@@ -53,6 +50,10 @@ host_info_list_->ai_protocol);
       return false;
     }
 
+    // free host info list
+    assert(host_info_list_);
+    freeaddrinfo(host_info_list_);
+
     return true;
   }
 
@@ -74,13 +75,32 @@ host_info_list_->ai_protocol);
     if( !sendMessage("T()\n") )
       return;
 
-    std::cout << readData(8) << std::endl;
+    std::cout << readLine() << std::endl;
   }
 
-  std::string KMS40Driver::readData(size_t bytesToRead)
+  void KMS40Driver::getSingleWrench()
   {
-    char in_buffer[bytesToRead];
-    size_t bytes_received = recv(socket_fd_, in_buffer, bytesToRead, 0);
+    if( !sendMessage("F()\n") )
+      return;
+
+    std::cout << readLine() << std::endl;
+  }
+
+  std::string KMS40Driver::readLine()
+  {
+    std::string line = "";
+
+    // read byte-wise until we find a line-feed
+    while( line.find("\n") == std::string::npos )
+      line += readByte();
+
+    return line;
+  }
+
+  char KMS40Driver::readByte()
+  {
+    char in_buffer;
+    size_t bytes_received = recv(socket_fd_, &in_buffer, 1, 0);
     // If no data arrives, the program will just wait here until some data arrives.
 
     if (bytes_received == 0)
@@ -88,6 +108,6 @@ host_info_list_->ai_protocol);
     if (bytes_received == -1) 
       std::cout << "Error during reading: receive error!" << std::endl ;
 
-    return std::string(in_buffer);
+    return in_buffer; 
   }
 }
