@@ -1,9 +1,10 @@
 #ifndef IAI_KMS_40_DRIVER_DRIVER_H_
 #define IAI_KMS_40_DRIVER_DRIVER_H_
 
-#include <netdb.h>
+//#include <netdb.h>
 
 #include <string>
+#include <iai_kms_40_driver/socket_connection.hpp>
 
 namespace iai_kms_40_driver
 {
@@ -19,14 +20,8 @@ namespace iai_kms_40_driver
       void getTemperature();
       void getSingleWrench();
 
-
     private:
-      int socket_fd_;
-
-      char readByte();
-      std::string readLine();
-
-      bool sendMessage(const std::string& msg);
+      SocketConnection socket_conn_;;
   };
 
 }
