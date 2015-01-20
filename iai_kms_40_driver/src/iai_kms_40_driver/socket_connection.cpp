@@ -1,6 +1,7 @@
 #include <iai_kms_40_driver/socket_connection.hpp>
 #include <iostream>
 #include <string.h>
+#include <assert.h>
 
 namespace iai_kms_40_driver
 {
@@ -58,9 +59,17 @@ namespace iai_kms_40_driver
 
     return true;
   }
- 
+
+  bool SocketConnection::ready() const
+  {
+    return (socket_fd_ != -1);
+  }
+
+
   char SocketConnection::readByte()
   {
+    assert(ready());
+
     char in_buffer;
     size_t bytes_received = recv(socket_fd_, &in_buffer, 1, 0);
     // If no data arrives, the program will just wait here until some data arrives.
@@ -86,6 +95,8 @@ namespace iai_kms_40_driver
 
   bool SocketConnection::sendMessage(const std::string& msg)
   {
+    assert(ready());
+
     size_t bytes_sent = send(socket_fd_, msg.c_str(), msg.length(), 0);
 
     if (bytes_sent == -1)

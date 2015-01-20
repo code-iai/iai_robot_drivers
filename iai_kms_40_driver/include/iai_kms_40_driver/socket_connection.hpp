@@ -15,6 +15,8 @@ namespace iai_kms_40_driver
       ~SocketConnection();
 
       bool open();
+      
+      bool ready() const;
 
       char readByte();
       std::string readLine();
