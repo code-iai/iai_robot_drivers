@@ -50,12 +50,18 @@ namespace iai_kms_40_driver
 
   void KMS40Driver::stop()
   {
+    pthread_mutex_lock(&mutex_);
     exit_requested_ = true;
+    pthread_mutex_unlock(&mutex_);
+    pthread_mutex_lock(&mutex_);
+
+    pthread_join(thread_, 0);
     // TODO: implement me
   }
 
   Wrench KMS40Driver::currentWrench()
   {
+    pthread_scoped_lock lock(&mutex_);
     return current_wrench_;
   }
 
@@ -63,6 +69,8 @@ namespace iai_kms_40_driver
   {
     while( !exit_requested_ )
     {
+      pthread_scoped_lock lock(&mutex_);
+
       std::cout << "Running the loop\n";
       // TODO: implement me
     }
