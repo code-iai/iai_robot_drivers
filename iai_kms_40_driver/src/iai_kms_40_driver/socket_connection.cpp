@@ -108,7 +108,7 @@ setsockopt(socket_fd_, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,sizeof(struct timeva
 
     size_t bytes_sent = send(socket_fd_, msg.c_str(), msg.length(), 0);
 
-    if (bytes_sent == -1)
+    if ( (bytes_sent == -1) || (bytes_sent != msg.length()) )
     {
       std::cout << "An error occured during msg sending.\n";
       return false;
