@@ -65,12 +65,20 @@ namespace iai_kms_40_driver
     return (socket_fd_ != -1);
   }
 
-
   char SocketConnection::readByte()
   {
     assert(ready());
 
     char in_buffer;
+
+struct timeval tv;
+
+tv.tv_sec = 1;  /* 30 Secs Timeout */
+tv.tv_usec = 0; // Not init'ing this can cause strange errors
+
+setsockopt(socket_fd_, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,sizeof(struct timeval));
+
+
     size_t bytes_received = recv(socket_fd_, &in_buffer, 1, 0);
     // If no data arrives, the program will just wait here until some data arrives.
 
@@ -84,6 +92,7 @@ namespace iai_kms_40_driver
 
   std::string SocketConnection::readLine()
   {
+    // TODO(add a timeout to this function
     std::string line = "";
 
     // read byte-wise until we find a line-feed
