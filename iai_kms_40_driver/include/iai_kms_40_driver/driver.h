@@ -1,6 +1,8 @@
 #ifndef IAI_KMS_40_DRIVER_DRIVER_H_
 #define IAI_KMS_40_DRIVER_DRIVER_H_
 
+#include <pthread.h>
+
 #include <iai_kms_40_driver/socket_connection.hpp>
 #include <iai_kms_40_driver/wrench.hpp>
 
@@ -15,12 +17,23 @@ namespace iai_kms_40_driver
 
       bool init(const std::string& ip, const std::string port);
 
-      void getTemperature();
-      void getSingleWrench();
+      bool start();
+      void stop();
+
+      Wrench currentWrench();
 
     private:
-      SocketConnection socket_conn_;;
-      Wrench last_wrench_;
+      SocketConnection socket_conn_;
+      Wrench current_wrench_;
+
+      pthread_t thread_; 
+      pthread_mutex_t mutex_; 
+      bool exit_requested_;
+
+      // actual function run be our thread
+      void* run();
+      // some interface function to feed run() to pthread_create
+      static void* run_s(void *ptr) { return ((KMS40Driver *) ptr)->run(); }
   };
 
 }
