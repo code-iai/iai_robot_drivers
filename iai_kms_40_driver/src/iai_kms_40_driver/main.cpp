@@ -17,8 +17,13 @@ int main(int argc, char **argv)
 
   std::cout << "Starting the node\n";
   my_driver.start();
+  ros::Rate r(1);
   while(ros::ok())
+  {
+    std::cout << my_driver.currentWrench() << std::endl;
     ros::spinOnce();
+    r.sleep();
+  }
   std::cout << "Requesting to stop the node\n";
   my_driver.stop();
 

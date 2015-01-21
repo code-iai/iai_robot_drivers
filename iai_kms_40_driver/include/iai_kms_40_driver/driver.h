@@ -24,7 +24,7 @@ namespace iai_kms_40_driver
 
     private:
       SocketConnection socket_conn_;
-      Wrench current_wrench_;
+      Wrench wrench_, wrench_buffer_;
 
       pthread_t thread_; 
       pthread_mutex_t mutex_; 
@@ -34,6 +34,9 @@ namespace iai_kms_40_driver
       void* run();
       // some interface function to feed run() to pthread_create
       static void* run_s(void *ptr) { return ((KMS40Driver *) ptr)->run(); }
+
+      void blockingReadWrench();
+      void copyWrenchIntoBuffer();
   };
 
 }

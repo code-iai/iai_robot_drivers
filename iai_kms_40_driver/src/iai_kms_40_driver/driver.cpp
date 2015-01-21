@@ -21,6 +21,7 @@ namespace iai_kms_40_driver
   bool KMS40Driver::start()
   {
     // TODO: start the streaming of the device.
+    socket_conn_.sendMessage("L1()\n");
 
     // setting up mutex
     pthread_mutexattr_t mattr;
@@ -53,30 +54,40 @@ namespace iai_kms_40_driver
     pthread_mutex_lock(&mutex_);
     exit_requested_ = true;
     pthread_mutex_unlock(&mutex_);
-    pthread_mutex_lock(&mutex_);
+
+    socket_conn_.sendMessage("L0()\n");
 
     pthread_join(thread_, 0);
-    // TODO: implement me
   }
 
   Wrench KMS40Driver::currentWrench()
   {
     pthread_scoped_lock lock(&mutex_);
-    return current_wrench_;
+    return wrench_buffer_;
   }
 
   void* KMS40Driver::run()
   {
     while( !exit_requested_ )
     {
-      pthread_scoped_lock lock(&mutex_);
-
-      std::cout << "Running the loop\n";
-      // TODO: implement me
+      blockingReadWrench();
+      copyWrenchIntoBuffer();
     }
 
     std::cout << "Leaving the loop\n";
 
     return 0;
+  }
+
+  void KMS40Driver::blockingReadWrench()
+  {
+    if( !parse_wrench(socket_conn_.readLine(), wrench_) )
+      std::cout << "Error parsing the wrench message!\n";
+  }
+
+  void KMS40Driver::copyWrenchIntoBuffer()
+  {
+    pthread_scoped_lock lock(&mutex_);
+    wrench_buffer_ = wrench_;
   }
 }
