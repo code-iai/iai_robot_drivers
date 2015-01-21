@@ -18,10 +18,31 @@ namespace iai_kms_40_driver
     return socket_conn_.open(ip, port);
   }
 
+  bool KMS40Driver::requestStreamStart()
+  {
+    std::cout << "Request kms40 to start data streaming\n.";
+    socket_conn_.sendMessage("L1()\n");
+    
+    return (socket_conn_.readLine().compare("L1\n") == 0);
+  }
+
+  bool KMS40Driver::requestStreamStop()
+  {
+    std::cout << "Request kms40 to stop data streaming\n.";
+    socket_conn_.sendMessage("L0()\n");
+    
+    return (socket_conn_.readLine().compare("L0\n") == 0);
+  }
+
   bool KMS40Driver::start()
   {
-    // TODO: start the streaming of the device.
-    socket_conn_.sendMessage("L1()\n");
+    if ( !requestStreamStart() )
+    {
+      std::cout << "Error during request to start streaming.\n";
+      return false;
+    } 
+
+    std::cout << "Starting thread\n";
 
     // setting up mutex
     pthread_mutexattr_t mattr;
@@ -55,7 +76,8 @@ namespace iai_kms_40_driver
     exit_requested_ = true;
     pthread_mutex_unlock(&mutex_);
 
-    socket_conn_.sendMessage("L0()\n");
+    if ( !requestStreamStop() )
+      std::cout << "Error during request to stop data streaming.\n";
 
     pthread_join(thread_, 0);
   }

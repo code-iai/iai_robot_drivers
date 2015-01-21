@@ -35,6 +35,8 @@ namespace iai_kms_40_driver
       // some interface function to feed run() to pthread_create
       static void* run_s(void *ptr) { return ((KMS40Driver *) ptr)->run(); }
 
+      bool requestStreamStart();
+      bool requestStreamStop();
       void blockingReadWrench();
       void copyWrenchIntoBuffer();
   };
