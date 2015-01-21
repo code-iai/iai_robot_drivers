@@ -13,7 +13,10 @@ int main(int argc, char **argv)
 
   KMS40Driver my_driver;
   if(!my_driver.init("192.168.100.175", "1000"))
+  {
     std::cout << "Error initializing kms40 driver.\n";
+    return 0;
+  }
 
   std::cout << "Starting the node\n";
   my_driver.start();
