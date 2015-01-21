@@ -15,24 +15,12 @@ int main(int argc, char **argv)
   if(!my_driver.init("192.168.100.175", "1000"))
     std::cout << "Error initializing kms40 driver.\n";
 
+  std::cout << "Starting the node\n";
   my_driver.start();
   while(ros::ok())
     ros::spinOnce();
+  std::cout << "Requesting to stop the node\n";
   my_driver.stop();
 
-std::string str = "F={2.792,4.377,1.630,0.045,0.061,-0.000},166107629\n";
-Wrench wrench;
-if (parse_wrench(str, wrench))
-        {
-            std::cout << "-------------------------\n";
-            std::cout << "Parsing succeeded\n";
-            std::cout << str << " Parses OK: " << wrench << std::endl;
-        }
-        else
-        {
-            std::cout << "-------------------------\n";
-            std::cout << "Parsing failed\n";
-            std::cout << "-------------------------\n";
-        }
  return 0;
 }
