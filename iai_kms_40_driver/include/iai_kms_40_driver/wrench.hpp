@@ -8,6 +8,10 @@ namespace iai_kms_40_driver
   class Wrench
   {
     public:
+      Wrench() : 
+          fx_(0.0), fy_(0.0), fz_(0.0), tx_(0.0), ty_(0.0), tz_(0.0), timestamp_(0)
+      {}
+      ~Wrench() {}
       double fx_, fy_, fz_, tx_, ty_, tz_;
       long timestamp_;
   };
