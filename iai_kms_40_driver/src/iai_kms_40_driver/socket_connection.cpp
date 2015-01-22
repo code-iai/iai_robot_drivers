@@ -6,7 +6,7 @@
 namespace iai_kms_40_driver
 {
   SocketConnection::SocketConnection() :
-      socket_fd_( -1 )
+      socket_fd_( -1 ), read_timeout_( )
   {
   }
 
@@ -16,8 +16,12 @@ namespace iai_kms_40_driver
 
   }
 
-  bool SocketConnection::open(const std::string& ip, const std::string port)
+  bool SocketConnection::open(const std::string& ip, const std::string port,
+     const timeval& read_timeout)
   {
+    // copy over timeout
+    read_timeout_ = read_timeout;
+
     // getting host info
     struct addrinfo host_info;
     struct addrinfo* host_info_list;
@@ -65,6 +69,27 @@ namespace iai_kms_40_driver
     return (socket_fd_ != -1);
   }
 
+  std::string SocketConnection::readChunk()
+  {
+    assert(ready());
+
+    char in_buffer[buffer_size_];
+
+    setsockopt(socket_fd_, SOL_SOCKET, SO_RCVTIMEO, (char *)&read_timeout_,
+        sizeof(struct timeval));
+
+    size_t bytes_received = recv(socket_fd_, &in_buffer, buffer_size_, 0);
+    // If no data arrives, the program will just wait here until it times out
+
+    if (bytes_received == 0)
+      std::cout << "Error during reading: host shut down." << std::endl ;
+    if (bytes_received == -1) 
+      std::cout << "Error during reading: receive error!" << std::endl ;
+
+    return std::string(in_buffer, bytes_received);
+  }
+
+
   char SocketConnection::readByte()
   {
     assert(ready());
@@ -92,14 +117,15 @@ setsockopt(socket_fd_, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,sizeof(struct timeva
 
   std::string SocketConnection::readLine()
   {
-    // TODO(add a timeout to this function
-    std::string line = "";
-
-    // read byte-wise until we find a line-feed
-    while( line.find("\n") == std::string::npos )
-      line += readByte();
-
-    return line;
+//    // TODO(add a timeout to this function
+//    std::string line = "";
+//
+//    // read byte-wise until we find a line-feed
+//    while( line.find("\n") == std::string::npos )
+//      line += readByte();
+//
+//    return line;
+    return readChunk();
   }
 
   bool SocketConnection::sendMessage(const std::string& msg)

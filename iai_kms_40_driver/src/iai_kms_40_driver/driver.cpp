@@ -15,7 +15,12 @@ namespace iai_kms_40_driver
 
   bool KMS40Driver::init(const std::string& ip, const std::string port)
   {
-    return socket_conn_.open(ip, port);
+    // specify a timeout of 1 second
+    struct timeval read_timeout;
+    read_timeout.tv_sec = 1;
+    read_timeout.tv_usec = 0;
+
+    return socket_conn_.open(ip, port, read_timeout);
   }
 
   bool KMS40Driver::requestStreamStart()

@@ -14,7 +14,8 @@ namespace iai_kms_40_driver
       SocketConnection();
       ~SocketConnection();
 
-      bool open(const std::string& ip, const std::string port);
+      bool open(const std::string& ip, const std::string port, 
+          const timeval& read_timeout);
       
       bool ready() const;
 
@@ -23,8 +24,13 @@ namespace iai_kms_40_driver
 
       bool sendMessage(const std::string& msg);
 
+      std::string readChunk();
+
     private:
       int socket_fd_;
+      timeval read_timeout_;
+
+      static const size_t buffer_size_ = 1024;
   };
 }
 #endif // IAI_KMS_40_DRIVER_SOCKET_CONNECTION_HPP_
