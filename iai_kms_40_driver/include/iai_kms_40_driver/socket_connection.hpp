@@ -2,7 +2,6 @@
 #define IAI_KMS_40_DRIVER_SOCKET_CONNECTION_HPP_
 
 #include <netdb.h>
-
 #include <string>
 
 namespace iai_kms_40_driver
@@ -20,7 +19,6 @@ namespace iai_kms_40_driver
       bool ready() const;
 
       bool sendMessage(const std::string& msg);
-
       std::string readChunk();
 
     private:

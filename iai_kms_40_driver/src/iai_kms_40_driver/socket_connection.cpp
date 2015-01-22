@@ -13,7 +13,8 @@ namespace iai_kms_40_driver
 
   SocketConnection::~SocketConnection()
   {
-
+    if(ready())
+      close(socket_fd_);
   }
 
   bool SocketConnection::open(const std::string& ip, const std::string port,
