@@ -10,7 +10,7 @@
 
 namespace iai_kms_40_driver
 {
-  bool parse_wrench(const std::string& msg, Wrench& wrench)
+  inline bool parse_wrench(const std::string& msg, Wrench& wrench)
   {
     using boost::spirit::qi::double_;
     using boost::spirit::qi::long_;
