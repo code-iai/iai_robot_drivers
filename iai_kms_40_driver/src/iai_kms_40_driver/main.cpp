@@ -1,5 +1,5 @@
 #include "ros/ros.h"
-#include <iai_kms_40_driver/node.hpp>
+#include <iai_kms_40_driver/kms_40_driver_node.hpp>
 
 int main(int argc, char **argv)
 {

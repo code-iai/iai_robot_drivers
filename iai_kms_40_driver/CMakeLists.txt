@@ -93,12 +93,12 @@ catkin_package(
 # include_directories(include)
 include_directories(
   include
-  ${catkin_INCLUDE_DIRS}
-)
+  ${catkin_INCLUDE_DIRS})
 
 add_library(${PROJECT_NAME}
   src/${PROJECT_NAME}/socket_connection.cpp
-  src/${PROJECT_NAME}/driver.cpp)
+  src/${PROJECT_NAME}/driver.cpp
+  src/${PROJECT_NAME}/kms_40_driver_node.cpp)
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES})
 
@@ -106,8 +106,7 @@ add_executable(kms40_node
   src/${PROJECT_NAME}/main.cpp)
 target_link_libraries(kms40_node
   ${catkin_LIBRARIES}
-  ${PROJECT_NAME}
-)
+  ${PROJECT_NAME})
 
 #############
 ## Install ##
