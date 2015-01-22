@@ -28,7 +28,7 @@ namespace iai_kms_40_driver
     std::cout << "Request kms40 to start data streaming\n.";
     socket_conn_.sendMessage("L1()\n");
     
-    return (socket_conn_.readLine().compare("L1\n") == 0);
+    return (socket_conn_.readChunk().compare("L1\n") == 0);
   }
 
   bool KMS40Driver::requestStreamStop()
@@ -36,7 +36,7 @@ namespace iai_kms_40_driver
     std::cout << "Request kms40 to stop data streaming\n.";
     socket_conn_.sendMessage("L0()\n");
     
-    return (socket_conn_.readLine().compare("L0\n") == 0);
+    return (socket_conn_.readChunk().compare("L0\n") == 0);
   }
 
   bool KMS40Driver::start()
@@ -108,7 +108,7 @@ namespace iai_kms_40_driver
 
   void KMS40Driver::blockingReadWrench()
   {
-    if( !parse_wrench(socket_conn_.readLine(), wrench_) )
+    if( !parse_wrench(socket_conn_.readChunk(), wrench_) )
       std::cout << "Error parsing the wrench message!\n";
   }
 

@@ -19,9 +19,6 @@ namespace iai_kms_40_driver
       
       bool ready() const;
 
-      char readByte();
-      std::string readLine();
-
       bool sendMessage(const std::string& msg);
 
       std::string readChunk();

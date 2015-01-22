@@ -89,45 +89,6 @@ namespace iai_kms_40_driver
     return std::string(in_buffer, bytes_received);
   }
 
-
-  char SocketConnection::readByte()
-  {
-    assert(ready());
-
-    char in_buffer;
-
-struct timeval tv;
-
-tv.tv_sec = 1;  /* 30 Secs Timeout */
-tv.tv_usec = 0; // Not init'ing this can cause strange errors
-
-setsockopt(socket_fd_, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,sizeof(struct timeval));
-
-
-    size_t bytes_received = recv(socket_fd_, &in_buffer, 1, 0);
-    // If no data arrives, the program will just wait here until some data arrives.
-
-    if (bytes_received == 0)
-      std::cout << "Error during reading: host shut down." << std::endl ;
-    if (bytes_received == -1) 
-      std::cout << "Error during reading: receive error!" << std::endl ;
-
-    return in_buffer; 
-  }
-
-  std::string SocketConnection::readLine()
-  {
-//    // TODO(add a timeout to this function
-//    std::string line = "";
-//
-//    // read byte-wise until we find a line-feed
-//    while( line.find("\n") == std::string::npos )
-//      line += readByte();
-//
-//    return line;
-    return readChunk();
-  }
-
   bool SocketConnection::sendMessage(const std::string& msg)
   {
     assert(ready());
