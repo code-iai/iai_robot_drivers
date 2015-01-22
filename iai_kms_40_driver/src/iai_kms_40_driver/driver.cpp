@@ -11,6 +11,7 @@ namespace iai_kms_40_driver
 
   KMS40Driver::~KMS40Driver()
   {
+    stop();
   }
 
   bool KMS40Driver::init(const std::string& ip, const std::string port,
@@ -52,7 +53,7 @@ namespace iai_kms_40_driver
     }
   
     exit_requested_ = false;
-    return false;
+    return true;
   }
 
   void KMS40Driver::stop()
@@ -75,7 +76,6 @@ namespace iai_kms_40_driver
 
   bool KMS40Driver::requestStreamStart()
   {
-    std::cout << "Request kms40 to start data streaming\n.";
     socket_conn_.sendMessage("L1()\n");
     
     return (socket_conn_.readChunk().compare("L1\n") == 0);
@@ -83,7 +83,6 @@ namespace iai_kms_40_driver
 
   bool KMS40Driver::requestStreamStop()
   {
-    std::cout << "Request kms40 to stop data streaming\n.";
     socket_conn_.sendMessage("L0()\n");
     
     return (socket_conn_.readChunk().compare("L0\n") == 0);
@@ -96,8 +95,6 @@ namespace iai_kms_40_driver
       blockingReadWrench();
       copyWrenchIntoBuffer();
     }
-
-    std::cout << "Leaving the loop\n";
 
     return 0;
   }
