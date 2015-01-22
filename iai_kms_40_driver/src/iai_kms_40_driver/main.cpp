@@ -24,7 +24,12 @@ int main(int argc, char **argv)
   }
 
   std::cout << "Starting the node\n";
-  my_driver.start();
+  if(!my_driver.start())
+  {
+    std::cout << "Error starting kms40 driver.\n";
+    return 0;
+  }
+
   ros::Rate r(1);
   while(ros::ok())
   {
