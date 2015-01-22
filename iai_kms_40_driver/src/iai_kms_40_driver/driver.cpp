@@ -16,11 +16,6 @@ namespace iai_kms_40_driver
   bool KMS40Driver::init(const std::string& ip, const std::string port,
       const timeval& read_timeout)
   {
-//    // specify a timeout of 1 second
-//    struct timeval read_timeout;
-//    read_timeout.tv_sec = 1;
-//    read_timeout.tv_usec = 0;
-
     return socket_conn_.open(ip, port, read_timeout);
   }
 
@@ -109,8 +104,10 @@ namespace iai_kms_40_driver
 
   void KMS40Driver::blockingReadWrench()
   {
-    if( !parse_wrench(socket_conn_.readChunk(), wrench_) )
-      std::cout << "Error parsing the wrench message!\n";
+    std::string readData = socket_conn_.readChunk();
+    
+    if( !parse_wrench(readData, wrench_) )
+      std::cout << "Error parsing wrench message!\nMessage: " << readData << "\n";
   }
 
   void KMS40Driver::copyWrenchIntoBuffer()
