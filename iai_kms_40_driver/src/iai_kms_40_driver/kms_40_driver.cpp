@@ -1,4 +1,4 @@
-#include <iai_kms_40_driver/driver.h>
+#include <iai_kms_40_driver/kms_40_driver.hpp>
 #include <iai_kms_40_driver/parser.hpp>
 #include <iai_kms_40_driver/pthread_scoped_lock.hpp>
 #include <iostream>

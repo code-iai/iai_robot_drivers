@@ -97,7 +97,7 @@ include_directories(
 
 add_library(${PROJECT_NAME}
   src/${PROJECT_NAME}/socket_connection.cpp
-  src/${PROJECT_NAME}/driver.cpp
+  src/${PROJECT_NAME}/kms_40_driver.cpp
   src/${PROJECT_NAME}/kms_40_driver_node.cpp)
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES})

@@ -2,7 +2,7 @@
 #define IAI_KMS_40_DRIVER_KMS_40_DRIVER_NODE_HPP_
 
 #include <ros/ros.h>
-#include <iai_kms_40_driver/driver.h>
+#include <iai_kms_40_driver/kms_40_driver.hpp>
 
 namespace iai_kms_40_driver
 {

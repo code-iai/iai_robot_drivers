@@ -1,5 +1,5 @@
-#ifndef IAI_KMS_40_DRIVER_DRIVER_H_
-#define IAI_KMS_40_DRIVER_DRIVER_H_
+#ifndef IAI_KMS_40_DRIVER_KMS_40_DRIVER_HPP_
+#define IAI_KMS_40_DRIVER_KMS_40_DRIVER_HPP_
 
 #include <pthread.h>
 
@@ -8,7 +8,6 @@
 
 namespace iai_kms_40_driver
 {
-
   class KMS40Driver
   {
     public:
@@ -42,6 +41,5 @@ namespace iai_kms_40_driver
       void blockingReadWrench();
       void copyWrenchIntoBuffer();
   };
-
 }
-#endif // IAI_KMS_40_DRIVER_DRIVER_H_
+#endif // IAI_KMS_40_DRIVER_KMS_40_DRIVER_HPP_
