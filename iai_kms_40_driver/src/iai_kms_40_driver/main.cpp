@@ -30,6 +30,9 @@ int main(int argc, char **argv)
     return 0;
   }
 
+  ros::Duration d(0.5);
+  d.sleep();
+
   ros::Rate r(1);
   while(ros::ok())
   {
@@ -40,5 +43,5 @@ int main(int argc, char **argv)
   std::cout << "Requesting to stop the node\n";
   my_driver.stop();
 
- return 0;
+  return 0;
 }
