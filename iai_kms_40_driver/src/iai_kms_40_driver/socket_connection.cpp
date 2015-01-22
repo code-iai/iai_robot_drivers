@@ -104,7 +104,7 @@ namespace iai_kms_40_driver
 
     if ( (bytes_sent == -1) || (bytes_sent != msg.length()) )
     {
-      std::cout << "An error occured during msg sending.\n";
+      std::cout << "Error sending a message.\n";
       return false;
     }
 

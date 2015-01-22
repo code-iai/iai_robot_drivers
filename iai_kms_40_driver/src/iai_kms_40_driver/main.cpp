@@ -9,7 +9,6 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "kms40_node");
   ros::NodeHandle n("~");
-  ROS_INFO("Running kms40 standalone node.\n");
 
   // specify a timeout of 1 second
   struct timeval read_timeout;
@@ -19,14 +18,13 @@ int main(int argc, char **argv)
   KMS40Driver my_driver;
   if(!my_driver.init("192.168.100.175", "1000", read_timeout))
   {
-    std::cout << "Error initializing kms40 driver.\n";
+    ROS_ERROR("Error initializing kms40 driver.");
     return 0;
   }
 
-  std::cout << "Starting the node\n";
   if(!my_driver.start())
   {
-    std::cout << "Error starting kms40 driver.\n";
+    ROS_ERROR("Error starting kms40 driver.");
     return 0;
   }
 
@@ -40,7 +38,6 @@ int main(int argc, char **argv)
     ros::spinOnce();
     r.sleep();
   }
-  std::cout << "Requesting to stop the node\n";
   my_driver.stop();
 
   return 0;

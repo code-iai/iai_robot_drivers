@@ -28,8 +28,6 @@ namespace iai_kms_40_driver
       return false;
     } 
 
-    std::cout << "Starting thread\n";
-
     // setting up mutex
     pthread_mutexattr_t mattr;
     pthread_mutexattr_init(&mattr);
@@ -48,7 +46,7 @@ namespace iai_kms_40_driver
 
     if(pthread_create(&thread_, &tattr, &KMS40Driver::run_s, (void *) this) != 0) 
     {
-      fprintf(stderr, "# ERROR: could not create realtime thread\n");                                   
+      std::cout << "Error when creating realtime thread\n";
       return false;                               
     }
   
