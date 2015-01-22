@@ -11,8 +11,13 @@ int main(int argc, char **argv)
   ros::NodeHandle n("~");
   ROS_INFO("Running kms40 standalone node.\n");
 
+  // specify a timeout of 1 second
+  struct timeval read_timeout;
+  read_timeout.tv_sec = 1;
+  read_timeout.tv_usec = 0;
+
   KMS40Driver my_driver;
-  if(!my_driver.init("192.168.100.175", "1000"))
+  if(!my_driver.init("192.168.100.175", "1000", read_timeout))
   {
     std::cout << "Error initializing kms40 driver.\n";
     return 0;

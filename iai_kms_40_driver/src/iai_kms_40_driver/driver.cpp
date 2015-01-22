@@ -13,30 +13,15 @@ namespace iai_kms_40_driver
   {
   }
 
-  bool KMS40Driver::init(const std::string& ip, const std::string port)
+  bool KMS40Driver::init(const std::string& ip, const std::string port,
+      const timeval& read_timeout)
   {
-    // specify a timeout of 1 second
-    struct timeval read_timeout;
-    read_timeout.tv_sec = 1;
-    read_timeout.tv_usec = 0;
+//    // specify a timeout of 1 second
+//    struct timeval read_timeout;
+//    read_timeout.tv_sec = 1;
+//    read_timeout.tv_usec = 0;
 
     return socket_conn_.open(ip, port, read_timeout);
-  }
-
-  bool KMS40Driver::requestStreamStart()
-  {
-    std::cout << "Request kms40 to start data streaming\n.";
-    socket_conn_.sendMessage("L1()\n");
-    
-    return (socket_conn_.readChunk().compare("L1\n") == 0);
-  }
-
-  bool KMS40Driver::requestStreamStop()
-  {
-    std::cout << "Request kms40 to stop data streaming\n.";
-    socket_conn_.sendMessage("L0()\n");
-    
-    return (socket_conn_.readChunk().compare("L0\n") == 0);
   }
 
   bool KMS40Driver::start()
@@ -91,6 +76,22 @@ namespace iai_kms_40_driver
   {
     pthread_scoped_lock lock(&mutex_);
     return wrench_buffer_;
+  }
+
+  bool KMS40Driver::requestStreamStart()
+  {
+    std::cout << "Request kms40 to start data streaming\n.";
+    socket_conn_.sendMessage("L1()\n");
+    
+    return (socket_conn_.readChunk().compare("L1\n") == 0);
+  }
+
+  bool KMS40Driver::requestStreamStop()
+  {
+    std::cout << "Request kms40 to stop data streaming\n.";
+    socket_conn_.sendMessage("L0()\n");
+    
+    return (socket_conn_.readChunk().compare("L0\n") == 0);
   }
 
   void* KMS40Driver::run()

@@ -15,7 +15,8 @@ namespace iai_kms_40_driver
       KMS40Driver();
       ~KMS40Driver();
 
-      bool init(const std::string& ip, const std::string port);
+      bool init(const std::string& ip, const std::string port,
+          const timeval& read_timeout);
 
       bool start();
       void stop();
@@ -35,6 +36,7 @@ namespace iai_kms_40_driver
       // some interface function to feed run() to pthread_create
       static void* run_s(void *ptr) { return ((KMS40Driver *) ptr)->run(); }
 
+      // various private aux functions
       bool requestStreamStart();
       bool requestStreamStop();
       void blockingReadWrench();
