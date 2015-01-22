@@ -5,7 +5,7 @@
 
 namespace iai_kms_40_driver
 {
-  KMS40Driver::KMS40Driver() : exit_requested_( false )
+  KMS40Driver::KMS40Driver() : exit_requested_( false ), running_( false )
   {
   }
 
@@ -53,19 +53,29 @@ namespace iai_kms_40_driver
     }
   
     exit_requested_ = false;
+    running_ = true;
     return true;
   }
 
   void KMS40Driver::stop()
   {
-    pthread_mutex_lock(&mutex_);
-    exit_requested_ = true;
-    pthread_mutex_unlock(&mutex_);
-
-    if ( !requestStreamStop() )
-      std::cout << "Error during request to stop data streaming.\n";
-
-    pthread_join(thread_, 0);
+    if(running_)
+    {
+      pthread_mutex_lock(&mutex_);
+      exit_requested_ = true;
+      pthread_mutex_unlock(&mutex_);
+  
+      if ( !requestStreamStop() )
+        std::cout << "Error during request to stop data streaming.\n";
+  
+      struct timespec read_timeout;
+      read_timeout.tv_sec = 1;
+      read_timeout.tv_nsec = 0;
+  
+      if(pthread_timedjoin_np(thread_, 0, &read_timeout) != 0)
+        std::cout << "Error joining the realtime thread.\n";
+      running_ = false;
+    }
   }
 
   Wrench KMS40Driver::currentWrench()

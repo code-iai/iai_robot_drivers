@@ -29,7 +29,7 @@ namespace iai_kms_40_driver
 
       pthread_t thread_; 
       pthread_mutex_t mutex_; 
-      bool exit_requested_;
+      bool exit_requested_, running_;
 
       // actual function run be our thread
       void* run();
