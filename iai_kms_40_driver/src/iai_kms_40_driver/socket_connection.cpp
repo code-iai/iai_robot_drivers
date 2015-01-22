@@ -83,9 +83,15 @@ namespace iai_kms_40_driver
     // If no data arrives, the program will just wait here until it times out
 
     if (bytes_received == 0)
+    {
       std::cout << "Error during reading: host shut down." << std::endl ;
+      return "";
+    }
     if (bytes_received == -1) 
+    {
       std::cout << "Error during reading: receive error!" << std::endl ;
+      return "";
+    }
 
     return std::string(in_buffer, bytes_received);
   }
