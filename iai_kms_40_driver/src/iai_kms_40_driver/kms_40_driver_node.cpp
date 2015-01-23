@@ -1,10 +1,12 @@
 #include <iai_kms_40_driver/kms_40_driver_node.hpp>
+#include <iai_kms_40_driver/msg_conversions.hpp>
 #include <iai_kms_40_driver/parser.hpp>
 
 namespace iai_kms_40_driver
 {
   KMS40DriverNode::KMS40DriverNode(const ros::NodeHandle& nh) : nh_(nh) 
   {
+    pub_ = nh_.advertise<geometry_msgs::WrenchStamped>("wrench", 1);
   }
   
   KMS40DriverNode::~KMS40DriverNode()
@@ -39,7 +41,7 @@ namespace iai_kms_40_driver
     ros::Rate r(1);
     while(ros::ok())
     {
-      std::cout << driver_.currentWrench() << std::endl;
+      pub_.publish(populateMsg(driver_.currentWrench(), msg_));
       ros::spinOnce();
       r.sleep();
     }

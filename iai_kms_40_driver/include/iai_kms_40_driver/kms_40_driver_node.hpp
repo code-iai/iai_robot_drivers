@@ -2,6 +2,7 @@
 #define IAI_KMS_40_DRIVER_KMS_40_DRIVER_NODE_HPP_
 
 #include <ros/ros.h>
+#include <geometry_msgs/WrenchStamped.h>
 #include <iai_kms_40_driver/kms_40_driver.hpp>
 
 namespace iai_kms_40_driver
@@ -17,6 +18,8 @@ namespace iai_kms_40_driver
   
     private:
       ros::NodeHandle nh_;
+      ros::Publisher pub_;
+      geometry_msgs::WrenchStamped msg_;
       KMS40Driver driver_;
   
       bool startUp();
