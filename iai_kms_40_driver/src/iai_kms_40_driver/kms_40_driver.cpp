@@ -71,8 +71,7 @@ namespace iai_kms_40_driver
       read_timeout.tv_sec = 1;
       read_timeout.tv_nsec = 0;
   
-      if(pthread_timedjoin_np(thread_, 0, &read_timeout) != 0)
-        std::cout << "Error joining the realtime thread.\n";
+      pthread_join(thread_, 0);
 
       running_ = false;
     }
