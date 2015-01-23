@@ -58,7 +58,7 @@ namespace iai_kms_40_driver
       return false;
     }
 
-    return driver_.start(ip, port, convertTime(timeout));
+    return driver_.start(ip, port, convertTime(timeout), 100);
   }
   
   void KMS40DriverNode::loop()

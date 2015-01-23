@@ -15,7 +15,7 @@ namespace iai_kms_40_driver
       ~KMS40Driver();
 
       bool start(const std::string& ip, const std::string port,
-          const timeval& read_timeout);
+          const timeval& read_timeout, unsigned int frame_divider);
 
       void stop();
 
@@ -36,10 +36,12 @@ namespace iai_kms_40_driver
 
       // various private aux functions
       bool spinRealtimeThread();
+      bool configureStream(unsigned int frame_divider);
       bool requestStreamStart();
       bool requestStreamStop();
       void blockingReadWrench();
       void copyWrenchIntoBuffer();
+      bool kmsServiceRequest(const std::string& request, const std::string& response);
   };
 }
 #endif // IAI_KMS_40_DRIVER_KMS_40_DRIVER_HPP_

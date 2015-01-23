@@ -2,6 +2,7 @@
 #include <iai_kms_40_driver/parser.hpp>
 #include <iai_kms_40_driver/pthread_scoped_lock.hpp>
 #include <iostream>
+#include <sstream>
 
 namespace iai_kms_40_driver
 {
@@ -15,7 +16,7 @@ namespace iai_kms_40_driver
   }
 
   bool KMS40Driver::start(const std::string& ip, const std::string port,
-      const timeval& read_timeout)
+      const timeval& read_timeout, unsigned int frame_divider)
   {
     if ( !socket_conn_.open(ip, port, read_timeout) )
     {
@@ -23,9 +24,17 @@ namespace iai_kms_40_driver
       return false;
     }
 
+    if ( !configureStream(frame_divider) )
+    {
+      std::cout << "Error during configuring of stream.\n";
+      socket_conn_.shutdown();
+      return false;
+    }
+
     if ( !requestStreamStart() )
     {
       std::cout << "Error during request to start streaming.\n";
+      socket_conn_.shutdown();
       return false;
     } 
 
@@ -33,6 +42,7 @@ namespace iai_kms_40_driver
     {
       std::cout << "Error when spinning realtime thread.\n";
       requestStreamStop();
+      socket_conn_.shutdown();
       return false;
     }
  
@@ -91,18 +101,23 @@ namespace iai_kms_40_driver
     return (pthread_create(&thread_, &tattr, &KMS40Driver::run_s, (void *) this) == 0);
   }
 
+  bool KMS40Driver::configureStream(unsigned int frame_divider)
+  {
+    std::ostringstream response, request;
+    request << "LDIV(" << frame_divider << ")\n";
+    response << "LDIV=" << frame_divider << "\n";
+
+    return kmsServiceRequest(request.str(), response.str());
+  } 
+
   bool KMS40Driver::requestStreamStart()
   {
-    socket_conn_.sendMessage("L1()\n");
-    
-    return (socket_conn_.readChunk().compare("L1\n") == 0);
+    return kmsServiceRequest("L1()\n", "L1\n");
   }
 
   bool KMS40Driver::requestStreamStop()
   {
-    socket_conn_.sendMessage("L0()\n");
-    
-    return (socket_conn_.readChunk().compare("L0\n") == 0);
+    return kmsServiceRequest("L0()\n", "L0\n");
   }
 
   void* KMS40Driver::run()
@@ -128,5 +143,12 @@ namespace iai_kms_40_driver
   {
     pthread_scoped_lock lock(&mutex_);
     wrench_buffer_ = wrench_;
+  }
+
+  bool KMS40Driver::kmsServiceRequest(const std::string& request, const std::string& response)
+  {
+    socket_conn_.sendMessage(request);
+    
+    return (socket_conn_.readChunk().compare(response) == 0);
   }
 }
