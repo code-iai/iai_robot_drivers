@@ -14,12 +14,14 @@
 
   <license>BSD</license>
 
-  <!-- <url type="website">http://wiki.ros.org/iai_kms_40_driver</url> -->
+  <url type="repository">https://github.com/code-iai/iai_robot_drivers</url>
 
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>geometry_msgs</build_depend>
+  <build_depend>boost</build_depend>
 
   <run_depend>roscpp</run_depend>
   <run_depend>geometry_msgs</run_depend>
+  <run_depend>boost</run_depend>
 </package>
