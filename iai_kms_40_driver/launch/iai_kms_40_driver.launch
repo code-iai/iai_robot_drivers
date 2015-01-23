@@ -1,0 +1,3 @@
+<launch>
+  <node pkg="iai_kms_40_driver" type="kms40_node" name="kms40" output="screen"/>
+</launch>
