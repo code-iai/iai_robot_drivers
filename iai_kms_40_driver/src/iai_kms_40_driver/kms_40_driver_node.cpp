@@ -39,6 +39,7 @@ namespace iai_kms_40_driver
   {
     std::string ip, port;
     double timeout;
+    int frame_divider;
 
     if ( !nh_.getParam("ip", ip) )
     {
@@ -58,7 +59,19 @@ namespace iai_kms_40_driver
       return false;
     }
 
-    return driver_.start(ip, port, convertTime(timeout), 100);
+    if ( !nh_.getParam("frame_divider", frame_divider) )
+    {
+      ROS_ERROR("Could not find ROS parameter for frame divider");
+      return false;
+    }
+
+    if ( frame_divider > 500 || frame_divider < 1)
+    {
+      ROS_ERROR("Frame divider not set to at least 1 or maximum 500");
+      return false;
+    }
+
+    return driver_.start(ip, port, convertTime(timeout), frame_divider);
   }
   
   void KMS40DriverNode::loop()

@@ -4,5 +4,6 @@
     <param name="port" value="1000" type="string"/>
     <param name="tcp_timeout" value="0.5" type="double"/>
     <param name="publish_rate" value="50" type="int"/>
+    <param name="frame_divider" value="10" type="int"/>
   </node>
 </launch>
