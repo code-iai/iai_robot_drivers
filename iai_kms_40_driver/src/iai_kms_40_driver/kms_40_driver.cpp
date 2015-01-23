@@ -29,28 +29,11 @@ namespace iai_kms_40_driver
       return false;
     } 
 
-    // setting up mutex
-    pthread_mutexattr_t mattr;
-    pthread_mutexattr_init(&mattr);
-    pthread_mutexattr_setprotocol(&mattr, PTHREAD_PRIO_INHERIT);
-
-    pthread_mutex_init(&mutex_,  &mattr);
-
-    // setting up thread
-    pthread_attr_t tattr;
-    struct sched_param sparam;
-    sparam.sched_priority = 12;
-    pthread_attr_init(&tattr);
-    pthread_attr_setschedpolicy(&tattr, SCHED_FIFO);
-    pthread_attr_setschedparam(&tattr, &sparam);
-    pthread_attr_setinheritsched (&tattr, PTHREAD_EXPLICIT_SCHED);
-
-    if(pthread_create(&thread_, &tattr, &KMS40Driver::run_s, (void *) this) != 0) 
+    if ( !spinRealtimeThread() )
     {
-      std::cout << "Error when creating realtime thread\n";
-      return false;                               
+      std::cout << "Error when spinning realtime thread.\n";
     }
-  
+ 
     exit_requested_ = false;
     running_ = true;
     return true;
@@ -83,6 +66,27 @@ namespace iai_kms_40_driver
   {
     pthread_scoped_lock lock(&mutex_);
     return wrench_buffer_;
+  }
+
+  bool KMS40Driver::spinRealtimeThread()
+  {
+    // setting up mutex
+    pthread_mutexattr_t mattr;
+    pthread_mutexattr_init(&mattr);
+    pthread_mutexattr_setprotocol(&mattr, PTHREAD_PRIO_INHERIT);
+
+    pthread_mutex_init(&mutex_,  &mattr);
+
+    // setting up thread
+    pthread_attr_t tattr;
+    struct sched_param sparam;
+    sparam.sched_priority = 12;
+    pthread_attr_init(&tattr);
+    pthread_attr_setschedpolicy(&tattr, SCHED_FIFO);
+    pthread_attr_setschedparam(&tattr, &sparam);
+    pthread_attr_setinheritsched (&tattr, PTHREAD_EXPLICIT_SCHED);
+
+    return (pthread_create(&thread_, &tattr, &KMS40Driver::run_s, (void *) this) == 0);
   }
 
   bool KMS40Driver::requestStreamStart()

@@ -35,6 +35,7 @@ namespace iai_kms_40_driver
       static void* run_s(void *ptr) { return ((KMS40Driver *) ptr)->run(); }
 
       // various private aux functions
+      bool spinRealtimeThread();
       bool requestStreamStart();
       bool requestStreamStop();
       void blockingReadWrench();
