@@ -63,10 +63,21 @@ namespace iai_kms_40_driver
   
   void KMS40DriverNode::loop()
   {
-    ros::Duration d(0.5);
-    d.sleep();
-  
-    ros::Rate r(1);
+    int publish_rate;
+
+    if ( !nh_.getParam("publish_rate", publish_rate) )
+    {
+      ROS_ERROR("Could not find ROS parameter for ROS publish rate");
+      return;
+    }
+
+    if ( !(publish_rate > 0) )
+    {
+      ROS_ERROR("Given ROS publish rate was not greater 0");
+      return;
+    }
+
+    ros::Rate r(publish_rate);
     while(ros::ok())
     {
       pub_.publish(populateMsg(driver_.currentWrench(), msg_));
