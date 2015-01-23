@@ -25,11 +25,17 @@ namespace iai_kms_40_driver
   
   bool KMS40DriverNode::startUp()
   {
-    std::string ip;
+    std::string ip, port;
 
     if ( !nh_.getParam("ip", ip) )
     {
       ROS_ERROR("Could not find ROS parameter for IP");
+      return false;
+    }
+
+    if ( !nh_.getParam("port", port) )
+    {
+      ROS_ERROR("Could not find ROS parameter for TCP port");
       return false;
     }
 
@@ -38,7 +44,7 @@ namespace iai_kms_40_driver
     read_timeout.tv_sec = 1;
     read_timeout.tv_usec = 0;
     
-    return driver_.start(ip, "1000", read_timeout);
+    return driver_.start(ip, port, read_timeout);
   }
   
   void KMS40DriverNode::loop()
