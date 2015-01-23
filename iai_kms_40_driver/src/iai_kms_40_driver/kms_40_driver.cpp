@@ -32,6 +32,8 @@ namespace iai_kms_40_driver
     if ( !spinRealtimeThread() )
     {
       std::cout << "Error when spinning realtime thread.\n";
+      requestStreamStop();
+      return false;
     }
  
     exit_requested_ = false;
