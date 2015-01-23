@@ -14,14 +14,15 @@ namespace iai_kms_40_driver
     stop();
   }
 
-  bool KMS40Driver::init(const std::string& ip, const std::string port,
+  bool KMS40Driver::start(const std::string& ip, const std::string port,
       const timeval& read_timeout)
   {
-    return socket_conn_.open(ip, port, read_timeout);
-  }
+    if ( !socket_conn_.open(ip, port, read_timeout) )
+    {
+      std::cout << "Errr during opening of socket.\n";
+      return false;
+    }
 
-  bool KMS40Driver::start()
-  {
     if ( !requestStreamStart() )
     {
       std::cout << "Error during request to start streaming.\n";
@@ -72,8 +73,11 @@ namespace iai_kms_40_driver
   
       if(pthread_timedjoin_np(thread_, 0, &read_timeout) != 0)
         std::cout << "Error joining the realtime thread.\n";
+
       running_ = false;
     }
+
+    socket_conn_.shutdown();
   }
 
   Wrench KMS40Driver::currentWrench()

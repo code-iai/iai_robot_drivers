@@ -28,7 +28,7 @@ namespace iai_kms_40_driver
     read_timeout.tv_sec = 1;
     read_timeout.tv_usec = 0;
     
-    return driver_.init("192.168.100.175", "1000", read_timeout) && driver_.start();
+    return driver_.start("192.168.100.175", "1000", read_timeout);
   }
   
   void KMS40DriverNode::loop()
