@@ -16,6 +16,8 @@ namespace iai_kms_40_driver
       bool open(const std::string& ip, const std::string port, 
           const timeval& read_timeout);
       
+      void shutdown();
+
       bool ready() const;
 
       bool sendMessage(const std::string& msg);

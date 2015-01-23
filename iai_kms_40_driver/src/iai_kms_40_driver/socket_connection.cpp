@@ -13,8 +13,7 @@ namespace iai_kms_40_driver
 
   SocketConnection::~SocketConnection()
   {
-    if(ready())
-      close(socket_fd_);
+    shutdown();
   }
 
   bool SocketConnection::open(const std::string& ip, const std::string port,
@@ -63,6 +62,13 @@ namespace iai_kms_40_driver
     freeaddrinfo(host_info_list);
 
     return true;
+  }
+
+  void SocketConnection::shutdown()
+  {
+    if(ready())
+      close(socket_fd_);
+    socket_fd_ = -1;
   }
 
   bool SocketConnection::ready() const
