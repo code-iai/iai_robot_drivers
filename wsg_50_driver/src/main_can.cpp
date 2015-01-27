@@ -50,11 +50,11 @@
 /// ROS
 #include <ros/ros.h>
 #include "std_msgs/String.h"
-#include "wsg_50_msgs/Status.h"
-#include "wsg_50_msgs/Move.h"
+#include "iai_wsg_50_msgs/Status.h"
+#include "iai_wsg_50_msgs/Move.h"
 #include "std_srvs/Empty.h"
-#include "wsg_50_msgs/Conf.h"
-#include "wsg_50_msgs/Incr.h"
+#include "iai_wsg_50_msgs/Conf.h"
+#include "iai_wsg_50_msgs/Incr.h"
 
 //------------------------------------------------------------------------
 // Local macros
@@ -90,7 +90,7 @@ bool objectGraspped;
 //------------------------------------------------------------------------
 
 
-bool moveSrv(wsg_50_msgs::Move::Request &req, wsg_50_msgs::Move::Response &res)
+bool moveSrv(iai_wsg_50_msgs::Move::Request &req, iai_wsg_50_msgs::Move::Response &res)
 {
 	if ( (req.width >= 0.0 && req.width <= 110.0) && (req.speed > 0.0 && req.speed <= 420.0) ){
   		ROS_INFO("Moving to %f position at %f mm/s.", req.width, req.speed);
@@ -108,7 +108,7 @@ bool moveSrv(wsg_50_msgs::Move::Request &req, wsg_50_msgs::Move::Response &res)
   	return true;
 }
 
-bool graspSrv(wsg_50_msgs::Move::Request &req, wsg_50_msgs::Move::Response &res)
+bool graspSrv(iai_wsg_50_msgs::Move::Request &req, iai_wsg_50_msgs::Move::Response &res)
 {
 	if ( (req.width >= 0.0 && req.width <= 110.0) && (req.speed > 0.0 && req.speed <= 420.0) ){
   		ROS_INFO("Grasping object at %f mm/s.", req.width, req.speed);
@@ -127,7 +127,7 @@ bool graspSrv(wsg_50_msgs::Move::Request &req, wsg_50_msgs::Move::Response &res)
   	return true;
 }
 
-bool incrementSrv(wsg_50_msgs::Incr::Request &req, wsg_50_msgs::Incr::Response &res)
+bool incrementSrv(iai_wsg_50_msgs::Incr::Request &req, iai_wsg_50_msgs::Incr::Response &res)
 {
 	if (req.direction == "open"){
 	
@@ -169,7 +169,7 @@ bool incrementSrv(wsg_50_msgs::Incr::Request &req, wsg_50_msgs::Incr::Response &
 	}
 }
 
-bool releaseSrv(wsg_50_msgs::Move::Request &req, wsg_50_msgs::Move::Response &res)
+bool releaseSrv(iai_wsg_50_msgs::Move::Request &req, iai_wsg_50_msgs::Move::Response &res)
 {
 	if ( (req.width >= 0.0 && req.width <= 110.0) && (req.speed > 0.0 && req.speed <= 420.0) ){
   		ROS_INFO("Releasing to %f position at %f mm/s.", req.width, req.speed);
@@ -202,13 +202,13 @@ bool stopSrv(std_srvs::Empty::Request &req, std_srvs::Empty::Request &res)
 	return true;
 }
 */
-bool setAccSrv(wsg_50_msgs::Conf::Request &req, wsg_50_msgs::Conf::Response &res)
+bool setAccSrv(iai_wsg_50_msgs::Conf::Request &req, iai_wsg_50_msgs::Conf::Response &res)
 {
 	setAcceleration(req.val);
 	return true;
 }
 
-bool setForceSrv(wsg_50_msgs::Conf::Request &req, wsg_50_msgs::Conf::Response &res)
+bool setForceSrv(iai_wsg_50_msgs::Conf::Request &req, iai_wsg_50_msgs::Conf::Response &res)
 {
 	setGraspingForceLimit(req.val);
 	return true;
@@ -256,7 +256,7 @@ int main( int argc, char **argv )
 	ros::ServiceServer setForceSS = nh.advertiseService("set_force", setForceSrv);
 	
 	// Publisher
-  	ros::Publisher state_pub = nh.advertise<wsg_50_msgs::Status>("status", 1000);
+  	ros::Publisher state_pub = nh.advertise<iai_wsg_50_msgs::Status>("status", 1000);
 
 	ROS_INFO("Ready to use.");
 
@@ -269,7 +269,7 @@ int main( int argc, char **argv )
 		//Loop waiting for orders and updating the state
 		
 		//Create the msg to send
-		wsg_50_msgs::Status status_msg;		
+		iai_wsg_50_msgs::Status status_msg;		
 
 		//Get state values
 		//const char * aux;

@@ -53,13 +53,13 @@
 #include <ros/ros.h>
 #include "std_msgs/String.h"
 #include "std_srvs/Empty.h"
-#include "wsg_50_msgs/Status.h"
-#include "wsg_50_msgs/Move.h"
-#include "wsg_50_msgs/Conf.h"
-#include "wsg_50_msgs/Incr.h"
-#include "wsg_50_msgs/Cmd.h"
-#include "wsg_50_msgs/PositionCmd.h"
-#include "wsg_50_msgs/SpeedCmd.h"
+#include "iai_wsg_50_msgs/Status.h"
+#include "iai_wsg_50_msgs/Move.h"
+#include "iai_wsg_50_msgs/Conf.h"
+#include "iai_wsg_50_msgs/Incr.h"
+#include "iai_wsg_50_msgs/Cmd.h"
+#include "iai_wsg_50_msgs/PositionCmd.h"
+#include "iai_wsg_50_msgs/SpeedCmd.h"
 
 #include "sensor_msgs/JointState.h"
 #include "std_msgs/Float32.h"
@@ -105,7 +105,7 @@ std::string l_finger_joint_name, r_finger_joint_name, reference_frame;
 // Function implementation
 //------------------------------------------------------------------------
 
-bool setAccSrv(wsg_50_msgs::Conf::Request &req, wsg_50_msgs::Conf::Response &res)
+bool setAccSrv(iai_wsg_50_msgs::Conf::Request &req, iai_wsg_50_msgs::Conf::Response &res)
 {
 	setAcceleration(req.val);
 	return true;
@@ -118,7 +118,7 @@ bool ackSrv(std_srvs::Empty::Request &req, std_srvs::Empty::Request &res)
 }
 
 /** \brief Callback for goal_position topic (in appropriate modes) */
-void position_cb(const wsg_50_msgs::PositionCmd::ConstPtr& msg)
+void position_cb(const iai_wsg_50_msgs::PositionCmd::ConstPtr& msg)
 {
     g_speed = msg->speed; 
     g_goal_position = msg->pos;
@@ -127,7 +127,7 @@ void position_cb(const wsg_50_msgs::PositionCmd::ConstPtr& msg)
 }
 
 /** \brief Callback for goal_speed topic (in appropriate modes) */
-void speed_cb(const wsg_50_msgs::SpeedCmd::ConstPtr& msg)
+void speed_cb(const iai_wsg_50_msgs::SpeedCmd::ConstPtr& msg)
 {
     g_goal_speed = msg->speed;
     g_speed = msg->speed;
@@ -172,7 +172,7 @@ void timer_cb(const ros::TimerEvent& ev)
 	}
 
 	// ==== Status msg ====
-	wsg_50_msgs::Status status_msg;
+	iai_wsg_50_msgs::Status status_msg;
 	status_msg.status = info.state_text;
 	status_msg.width = info.position;
 	status_msg.speed = info.speed;
@@ -271,7 +271,7 @@ int main( int argc, char **argv )
         sub_speed = nh.subscribe("goal_speed", 5, speed_cb);
 
 		// Publisher
-		g_pub_state = nh.advertise<wsg_50_msgs::Status>("status", 1000);
+		g_pub_state = nh.advertise<iai_wsg_50_msgs::Status>("status", 1000);
 		g_pub_joint = nh.advertise<sensor_msgs::JointState>("/joint_states", 10);
         g_pub_moving = nh.advertise<std_msgs::Bool>("moving", 10);
 
