@@ -1,15 +1,24 @@
 <?xml version="1.0"?>
 <launch>
 
+  <arg name="ip" default="192.168.100.166"/>
+  <arg name="port" default="1000"/>
+  <arg name="rate" default="30"/>
+  <arg name="grasping_force" default="20"/>
+  <arg name="protocol" default="tcp"/>
+  <arg name="l_finger_joint_name" default="right_gripper_base_joint_gripper_left"/>
+  <arg name="r_finger_joint_name" default="right_gripper_base_joint_gripper_right"/>
+  <arg name="reference_frame" default=""/> 
+
   <node name="wsg_50_driver"  pkg="wsg_50_driver" type="wsg_50_ip" output="screen">
-    <param name="ip" type="string" value="192.168.100.166"/>
-    <param name="port" type="int" value="1000"/>
-    <param name="rate" type="double" value="30"/>
-    <param name="grasping_force" type="double" value="20"/>
-    <param name="protocol" type="string" value="tcp"/>
-    <param name="l_finger_joint_name" type="string" value="right_gripper_base_joint_gripper_left"/>
-    <param name="r_finger_joint_name" type="string" value="right_gripper_base_joint_gripper_right"/>
-    <param name="reference_frame" type="string" value=""/>
+    <param name="ip" type="string" value="$(arg ip)"/>
+    <param name="port" type="int" value="$(arg port)"/>
+    <param name="rate" type="double" value="$(arg rate)"/>
+    <param name="grasping_force" type="double" value="$(arg grasping_force)"/>
+    <param name="protocol" type="string" value="$(arg protocol)"/>
+    <param name="l_finger_joint_name" type="string" value="$(arg l_finger_joint_name)"/>
+    <param name="r_finger_joint_name" type="string" value="$(arg r_finger_joint_name)"/>
+    <param name="reference_frame" type="string" value="$(arg reference_frame)"/>
   </node>
 
 </launch>
