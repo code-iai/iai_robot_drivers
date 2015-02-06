@@ -84,6 +84,12 @@ namespace iai_kms_40_driver
       return false;
     }
 
+    if ( !nh_.getParam("frame_id", msg_.header.frame_id) )
+    {
+      ROS_ERROR("Could not find ROS parameter for frame-id");
+      return false;
+    }
+
     if ( !nh_.getParam("frame_divider", frame_divider) )
     {
       ROS_ERROR("Could not find ROS parameter for frame divider");
@@ -118,6 +124,11 @@ namespace iai_kms_40_driver
     ros::Rate r(publish_rate);
     while(ros::ok())
     {
+      // TODO: Getting the timestamp here is a hack! This should come from the driver.
+      //       However, at the time of writing the firmware only reported a meaningless
+      //       timestamp, i.e. relative to system bootup time.
+      msg_.header.stamp = ros::Time::now();
+ 
       pub_.publish(populateMsg(driver_.currentWrench(), msg_));
       ros::spinOnce();
       r.sleep();
