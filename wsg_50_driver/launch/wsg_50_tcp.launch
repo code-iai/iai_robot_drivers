@@ -6,8 +6,8 @@
   <arg name="rate" default="30"/>
   <arg name="grasping_force" default="20"/>
   <arg name="protocol" default="tcp"/>
-  <arg name="l_finger_joint_name" default="right_gripper_base_joint_gripper_left"/>
-  <arg name="r_finger_joint_name" default="right_gripper_base_joint_gripper_right"/>
+  <arg name="l_finger_joint_name" default="right_gripper_base_gripper_left_joint"/>
+  <arg name="r_finger_joint_name" default="right_gripper_base_gripper_right_joint"/>
   <arg name="reference_frame" default=""/> 
 
   <node name="wsg_50_driver"  pkg="wsg_50_driver" type="wsg_50_ip" output="screen">

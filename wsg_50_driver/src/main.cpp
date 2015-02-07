@@ -187,9 +187,6 @@ void timer_cb(const ros::TimerEvent& ev)
 	// ==== Joint state msg ====
 	sensor_msgs::JointState joint_states;
 	joint_states.header.stamp = ros::Time::now();;
-//	joint_states.header.frame_id = "wsg_50_gripper_base_link";
-//	joint_states.name.push_back("wsg_50_gripper_base_joint_gripper_left");
-//	joint_states.name.push_back("wsg_50_gripper_base_joint_gripper_right");
 	joint_states.header.frame_id = reference_frame;
 	joint_states.name.push_back(l_finger_joint_name);
 	joint_states.name.push_back(r_finger_joint_name);
