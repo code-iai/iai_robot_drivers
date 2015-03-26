@@ -58,4 +58,5 @@ target_link_libraries(wsg_50_ip ${catkin_LIBRARIES})
 #add_compile_flags(wsg_50_can -g -Wall)
 #target_link_libraries(wsg_50_can pcan)
 
+add_dependencies(wsg_50_ip ${catkin_EXPORTED_TARGETS})
 

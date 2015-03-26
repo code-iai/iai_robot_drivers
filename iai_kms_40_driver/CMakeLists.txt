@@ -29,3 +29,5 @@ add_executable(kms40_node
 target_link_libraries(kms40_node
   ${catkin_LIBRARIES}
   ${PROJECT_NAME})
+
+add_dependencies(kms40_node ${catkin_EXPORTED_TARGETS})
