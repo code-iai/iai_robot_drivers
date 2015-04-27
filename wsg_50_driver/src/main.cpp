@@ -269,7 +269,7 @@ int main( int argc, char **argv )
 
 		// Publisher
 		g_pub_state = nh.advertise<iai_wsg_50_msgs::Status>("status", 1000);
-		g_pub_joint = nh.advertise<sensor_msgs::JointState>("/joint_states", 10);
+		g_pub_joint = nh.advertise<sensor_msgs::JointState>("joint_states", 10);
         g_pub_moving = nh.advertise<std_msgs::Bool>("moving", 10);
 
 		ROS_INFO("Ready to use, homing now...");

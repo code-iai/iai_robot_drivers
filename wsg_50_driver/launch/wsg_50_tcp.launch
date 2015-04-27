@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-
+  <arg name="js_topic" default="~joint_states"/>
   <arg name="ip" default="192.168.100.166"/>
   <arg name="port" default="1000"/>
   <arg name="rate" default="30"/>
@@ -20,6 +20,7 @@
     <param name="l_finger_joint_name" type="string" value="$(arg l_finger_joint_name)"/>
     <param name="r_finger_joint_name" type="string" value="$(arg r_finger_joint_name)"/>
     <param name="reference_frame" type="string" value="$(arg reference_frame)"/>
+    <remap from="~joint_states" to="$(arg js_topic)"/>
   </node>
 
 </launch>
