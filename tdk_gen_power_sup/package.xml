@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package>
+  <name>tdk_gen_power_sup</name>
+  <version>0.1.0</version>
+  <description>The tdk_gen_power_sup package</description>
+ 
+  <maintainer email="mvargasg@uni-bremen.de">Minerva Vargas</maintainer>
+  <license>GNU</license>
+
+
+  <!-- Url tags are optional, but mutiple are allowed, one per tag -->
+  <!-- Example: -->
+  <!-- <url type="website">http://wiki.ros.org/tdk_gen_power_sup</url> -->
+
+  <author email="mvargasg@uni-bremen.de">Minerva Vargas</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>pyserial</build_depend>
+
+  <run_depend>pyserial</run_depend>
+  <run_depend>rospy</run_depend>
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+    <!-- Other tools can request additional information be placed here -->
+
+  </export>
+</package>

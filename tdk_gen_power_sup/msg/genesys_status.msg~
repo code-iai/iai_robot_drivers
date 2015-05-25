@@ -1,0 +1,5 @@
+float32 meas_voltage
+float32 prog_voltage
+float32 meas_current
+float32 prog_current
+
