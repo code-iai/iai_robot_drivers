@@ -27,6 +27,7 @@
 #include <iostream>
 #include <string.h>
 #include <assert.h>
+#include <unistd.h>
 
 namespace iai_kms_40_driver
 {
