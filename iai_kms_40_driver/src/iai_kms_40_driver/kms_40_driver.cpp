@@ -161,7 +161,7 @@ namespace iai_kms_40_driver
     std::string readData = socket_conn_.readChunk();
     
     if( !parse_wrench(readData, wrench_) )
-      std::cout << "Error parsing wrench message!\nMessage: " << readData << "\n";
+      std::cout << "Error parsing wrench message!\nMessage:\n" << readData << std::endl;
   }
 
   void KMS40Driver::copyWrenchIntoBuffer()
