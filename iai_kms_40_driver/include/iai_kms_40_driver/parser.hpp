@@ -64,8 +64,8 @@ namespace iai_kms_40_driver
 
         space);
 
-    // fail if we did not get a full match
-    return r && (first == last);
+    // fail if we did not even get a partial match
+    return r;
   }
 }
 #endif // IAI_KMS_40_DRIVER_PARSER_H_
