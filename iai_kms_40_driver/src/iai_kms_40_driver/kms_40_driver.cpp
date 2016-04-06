@@ -55,7 +55,12 @@ namespace iai_kms_40_driver
       socket_conn_.shutdown();
       return false;
     }
-
+    kmsServiceRequest("VL(1)\n", "VL=1\n");
+    kmsServiceRequest("F()\n", "VL=1\n");
+    kmsServiceRequest("FLAGS()\n", "VL=1\n");
+    kmsServiceRequest("T()\n", "VL=1\n");
+    // kmsServiceRequest("STATUS(536870923)\n", "VL=1\n");
+    // kmsServiceRequest("STATUS()\n", "VL=1\n");
     if ( !requestStreamStart() )
     {
       std::cout << "Error during request to start streaming.\n";
@@ -122,8 +127,11 @@ namespace iai_kms_40_driver
     pthread_attr_setschedpolicy(&tattr, SCHED_FIFO);
     pthread_attr_setschedparam(&tattr, &sparam);
     pthread_attr_setinheritsched (&tattr, PTHREAD_EXPLICIT_SCHED);
+    int return_code = pthread_create(&thread_, &tattr, &KMS40Driver::run_s, (void *) this);
+    if (return_code != 0) 
+      std::cout << "return code: " << strerror(return_code) << std::endl;
 
-    return (pthread_create(&thread_, &tattr, &KMS40Driver::run_s, (void *) this) == 0);
+    return (return_code == 0);
   }
 
   bool KMS40Driver::configureStream(unsigned int frame_divider)
@@ -137,7 +145,11 @@ namespace iai_kms_40_driver
 
   bool KMS40Driver::requestStreamStart()
   {
+    // kmsServiceRequest("L1()\n", "L1\n");
+    // kmsServiceRequest("FLAGS()\n", "VL=1\n");
+    // kmsServiceRequest("F()\n", "F\n");
     return kmsServiceRequest("L1()\n", "L1\n");
+    // return true;
   }
 
   bool KMS40Driver::requestStreamStop()
@@ -147,8 +159,10 @@ namespace iai_kms_40_driver
 
   void* KMS40Driver::run()
   {
+    // std::cout << "start of run" << std::endl;
     while( !exit_requested_ )
     {
+      // std::cout << "loopidupidu" << std::endl;
       blockingReadWrench();
       copyWrenchIntoBuffer();
     }
@@ -173,7 +187,7 @@ namespace iai_kms_40_driver
   bool KMS40Driver::kmsServiceRequest(const std::string& request, const std::string& response)
   {
     socket_conn_.sendMessage(request);
-    
+    // socket_conn_.readChunk();
     return (socket_conn_.readChunk().compare(response) == 0);
   }
 }

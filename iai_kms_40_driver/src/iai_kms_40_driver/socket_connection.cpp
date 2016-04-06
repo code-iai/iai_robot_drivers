@@ -54,6 +54,7 @@ namespace iai_kms_40_driver
     memset(&host_info, 0, sizeof(host_info));
     host_info.ai_family = AF_UNSPEC;
     host_info.ai_socktype = SOCK_STREAM;
+    // host_info.ai_socktype = SOCK_RAW;
     int status = getaddrinfo(ip.c_str(), port.c_str(), &host_info, &host_info_list);
  
     if(status != 0)
@@ -124,8 +125,9 @@ namespace iai_kms_40_driver
       std::cout << "Error during reading: receive error!" << std::endl ;
       return "";
     }
-
-    return std::string(in_buffer, bytes_received);
+    std::string result = std::string(in_buffer, bytes_received);
+    std::cout << "socket result: " << result << std::endl;
+    return result;
   }
 
   bool SocketConnection::sendMessage(const std::string& msg)
