@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>soft_runstop</name>
+  <version>0.0.1</version>
+  <description>
+    Turns a joystick button into a software runstop.
+  </description>
+
+  <maintainer email="georg.bartels@cs.uni-bremen.de">Georg Bartels</maintainer>
+  <maintainer email="amaldo@cs.uni-bremen.de">Alexis Maldonado</maintainer>
+
+  <author>Ingo Kresse</author>
+
+  <license>BSD</license>
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>roscpp</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+
+  <export>
+  </export>
+</package>

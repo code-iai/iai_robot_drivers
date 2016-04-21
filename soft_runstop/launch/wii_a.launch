@@ -1,0 +1,8 @@
+<launch>
+  <node name="soft_runstop" pkg="soft_runstop" type="soft_runstop">
+    <param name="stop_button" value="3"/>
+    <param name="start_button" value="7"/>
+    <param name="guard_time" value="0.5"/>
+    <remap from="/joy" to="/wii/wiimote" />
+  </node>
+</launch>
