@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package>
+  <name>igh_eml</name>
+  <version>0.0.1</version>
+  <description>
+    A ROS wrapper for the external igh_eml package.
+  </description>
+
+  <maintainer email="georg.bartels@cs.uni-bremen.de">Georg Bartels</maintainer>
+
+  <license>GPL, LGPL</license>
+
+  <author email="georg.bartels@cs.uni-bremen.de">Georg Bartels</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <export>
+  </export>
+</package>
