@@ -45,7 +45,7 @@ ExternalProject_Add(upstream_igh_eml    # Name for custom target
 #  [PATCH_COMMAND cmd...]      # Command to patch downloaded source
 # #--Configure step-------------
 #  [SOURCE_DIR dir]            # Source dir to be used for build
-  CONFIGURE_COMMAND <SOURCE_DIR>/bootstrap --prefix=<SOURCE_DIR> COMMAND <SOURCE_DIR>/configure --prefix=<SOURCE_DIR> --disable-kernel --enable-hrtimer --enable-tool  # Build tree configuration command
+  CONFIGURE_COMMAND touch <SOURCE_DIR>/ChangeLog COMMAND autoreconf -i <SOURCE_DIR> COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --disable-kernel --enable-hrtimer --enable-tool  # Build tree configuration command
 #  [CMAKE_COMMAND /.../cmake]  # Specify alternative cmake executable
 #  [CMAKE_GENERATOR gen]       # Specify generator for native build
 #  [CMAKE_GENERATOR_TOOLSET t] # Generator-specific toolset name
