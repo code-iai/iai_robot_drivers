@@ -73,6 +73,7 @@ namespace iai_kms_40_driver
  
     exit_requested_ = false;
     running_ = true;
+    paused_ = false;
     return true;
   }
 
@@ -152,8 +153,10 @@ namespace iai_kms_40_driver
   {
     while( !exit_requested_ )
     {
-      blockingReadWrench();
-      copyWrenchIntoBuffer();
+      if (!paused_){
+        blockingReadWrench();
+        copyWrenchIntoBuffer();
+      }
     }
 
     return 0;
@@ -175,7 +178,25 @@ namespace iai_kms_40_driver
 
   bool KMS40Driver::kmsServiceRequest(const std::string& request, const std::string& response)
   {
+    paused_ = true;
     socket_conn_.sendMessage(request);
-    return (socket_conn_.readChunk().compare(response) == 0);
+    bool result = (socket_conn_.readChunk().compare(response) == 0);
+    if (result && request == "L1()\n")
+      paused_ = false;
+    if (!result)
+      std::cout << response << std::endl;
+    return result;
+  }
+
+  bool KMS40Driver::publicKmsServiceRequest(const std::string& request, const std::string& response)
+  {
+    bool result = kmsServiceRequest("L0()\n", "L0\n");
+    if (result){
+      socket_conn_.sendMessage(request);
+      result = (socket_conn_.readChunk().compare(response) == 0);
+      if (result)
+        return kmsServiceRequest("L1()\n", "L1\n");
+    }
+    return false;
   }
 }

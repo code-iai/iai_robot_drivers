@@ -28,6 +28,8 @@
 
 #include <ros/ros.h>
 #include <geometry_msgs/WrenchStamped.h>
+#include <iai_kms_40_msgs/SetTare.h>
+#include <iai_kms_40_msgs/SetHz.h>
 #include <iai_kms_40_driver/kms_40_driver.hpp>
 
 namespace iai_kms_40_driver
@@ -44,11 +46,14 @@ namespace iai_kms_40_driver
     private:
       ros::NodeHandle nh_;
       ros::Publisher pub_;
+      ros::ServiceServer tare_service_;
       geometry_msgs::WrenchStamped msg_;
       KMS40Driver driver_;
   
       bool startUp();
       void loop();
+      bool tare_service_callback(iai_kms_40_msgs::SetTare::Request& req, iai_kms_40_msgs::SetTare::Response& res);
+      bool hz_service_callback(iai_kms_40_msgs::SetHz::Request& req, iai_kms_40_msgs::SetHz::Response& res);
   };
 } // namespace iai_kms_40_driver
 #endif // IAI_KMS_40_DRIVER_KMS_40_DRIVER_NODE_HPP_

@@ -45,6 +45,7 @@ namespace iai_kms_40_driver
       void stop();
 
       Wrench currentWrench();
+      bool publicKmsServiceRequest(const std::string& request, const std::string& response);
 
     private:
       SocketConnection socket_conn_;
@@ -52,7 +53,7 @@ namespace iai_kms_40_driver
 
       pthread_t thread_; 
       pthread_mutex_t mutex_; 
-      bool exit_requested_, running_;
+      bool exit_requested_, running_, paused_;
 
       // actual function run be our thread
       void* run();
@@ -60,13 +61,13 @@ namespace iai_kms_40_driver
       static void* run_s(void *ptr) { return ((KMS40Driver *) ptr)->run(); }
 
       // various private aux functions
+      bool kmsServiceRequest(const std::string& request, const std::string& response);
       bool spinRealtimeThread();
       bool configureStream(unsigned int frame_divider);
       bool requestStreamStart();
       bool requestStreamStop();
       void blockingReadWrench();
       void copyWrenchIntoBuffer();
-      bool kmsServiceRequest(const std::string& request, const std::string& response);
   };
 }
 #endif // IAI_KMS_40_DRIVER_KMS_40_DRIVER_HPP_

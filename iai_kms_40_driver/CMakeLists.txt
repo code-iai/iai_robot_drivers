@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 2.8.3)
 project(iai_kms_40_driver)
 
 find_package(catkin REQUIRED COMPONENTS
-  roscpp geometry_msgs
+  roscpp 
+  geometry_msgs
+  iai_kms_40_msgs
 )
 
 find_package(Boost REQUIRED)
