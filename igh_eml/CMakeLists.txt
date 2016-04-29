@@ -4,10 +4,9 @@ project(igh_eml)
 find_package(catkin REQUIRED)
 
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES igh_eml
-#  CATKIN_DEPENDS other_catkin_pkg
-#  DEPENDS system_lib
+  INCLUDE_DIRS ${CATKIN_DEVEL_PREFIX}/include
+  LIBRARIES ethercat
+# DEPENDS
 )
 
 include(ExternalProject)
@@ -52,9 +51,9 @@ ExternalProject_Add(upstream_igh_eml    # Name for custom target
 #  [CMAKE_ARGS args...]        # Arguments to CMake command line
 #  [CMAKE_CACHE_ARGS args...]  # Initial cache arguments, of the form -Dvar:string=on
 # #--Build step-----------------
-#  [BINARY_DIR dir]            # Specify build dir location
-#  [BUILD_COMMAND cmd...]      # Command to drive the native build
-#  [BUILD_IN_SOURCE 1]         # Use source dir for build dir
+#  BINARY_DIR <SOURCE_DIR>            # Specify build dir location
+#  BUILD_COMMAND make      # Command to drive the native build
+  BUILD_IN_SOURCE 1         # Use source dir for build dir
 # #--Install step---------------
 #  [INSTALL_DIR dir]           # Installation prefix
 #  [INSTALL_COMMAND cmd...]    # Command to drive install after build
@@ -72,5 +71,32 @@ ExternalProject_Add(upstream_igh_eml    # Name for custom target
 # #--Custom targets-------------
 #  [STEP_TARGETS st1 st2 ...]  # Generate custom targets for these steps
   )
+
 ExternalProject_Get_Property(upstream_igh_eml source_dir)
-MESSAGE( "Where did it go? ${source_dir}" )
+# MESSAGE( "Where did it go? ${source_dir}" )
+
+# COPYING BUILD ARTIFACTS INTO CATKIN'S DEVEL SPACE
+file(COPY
+  ${source_dir}/../../include/ecrt.h
+  DESTINATION ${CATKIN_DEVEL_PREFIX}/include
+)
+
+file(COPY
+  ${source_dir}/../../include/ectty.h
+  DESTINATION ${CATKIN_DEVEL_PREFIX}/include
+)
+
+file(COPY
+  ${source_dir}/../../lib/libethercat.so
+  DESTINATION ${CATKIN_DEVEL_PREFIX}/lib
+)
+
+file(COPY
+  ${source_dir}/../../lib/libethercat.so.1
+  DESTINATION ${CATKIN_DEVEL_PREFIX}/lib
+)
+
+file(COPY
+  ${source_dir}/../../lib/libethercat.so.1.0.0
+  DESTINATION ${CATKIN_DEVEL_PREFIX}/lib
+)
