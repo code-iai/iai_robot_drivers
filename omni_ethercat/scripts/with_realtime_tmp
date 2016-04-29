@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# This script is intended as a launch-prefix for roslaunch.
+# It gives realtime permissions to the application by setting
+# a POSIX capability. On our robot we have it installed in
+# /usr/local/bin.
+#
+# It requires to following line in /etc/sudoers:
+#
+#   ALL ALL=NOPASSWD: /sbin/setcap CAP_SYS_NICE=ep *
+#
+
+PROG=$(basename $1)
+
+mkdir -p /tmp/rd
+rm -f /tmp/rd/$PROG
+
+cp $1 /tmp/rd/$PROG
+echo setting realtime permissions for $PROG
+sudo /sbin/setcap CAP_SYS_NICE=ep /tmp/rd/$PROG
+
+shift 1
+
+exec /tmp/rd/$PROG $*
+
