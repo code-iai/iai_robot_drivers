@@ -3,7 +3,9 @@ project(soft_runstop)
 
 find_package(catkin REQUIRED COMPONENTS roscpp std_msgs sensor_msgs)
 
-catkin_package(CATKIN_DEPENDS roscpp std_msgs sensor_msgs)
+catkin_package(
+  INCLUDE_DIRS include
+  CATKIN_DEPENDS roscpp std_msgs sensor_msgs)
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 
