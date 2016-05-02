@@ -75,28 +75,42 @@ ExternalProject_Add(upstream_igh_eml    # Name for custom target
 ExternalProject_Get_Property(upstream_igh_eml source_dir)
 # MESSAGE( "Where did it go? ${source_dir}" )
 
-# COPYING BUILD ARTIFACTS INTO CATKIN'S DEVEL SPACE
-file(COPY
-  ${source_dir}/../../include/ecrt.h
-  DESTINATION ${CATKIN_DEVEL_PREFIX}/include
+
+add_custom_command(TARGET upstream_igh_eml PRE_BUILD
+    COMMAND mkdir -p
+        ${source_dir}/../../include
 )
 
-file(COPY
-  ${source_dir}/../../include/ectty.h
-  DESTINATION ${CATKIN_DEVEL_PREFIX}/include
+add_custom_command(TARGET upstream_igh_eml POST_BUILD
+    COMMAND cp 
+      ${source_dir}/../../include/ecrt.h 
+      ${CATKIN_DEVEL_PREFIX}/include/
 )
 
-file(COPY
-  ${source_dir}/../../lib/libethercat.so
-  DESTINATION ${CATKIN_DEVEL_PREFIX}/lib
+add_custom_command(TARGET upstream_igh_eml POST_BUILD
+    COMMAND cp 
+      ${source_dir}/../../include/ectty.h
+      ${CATKIN_DEVEL_PREFIX}/include
 )
 
-file(COPY
-  ${source_dir}/../../lib/libethercat.so.1
-  DESTINATION ${CATKIN_DEVEL_PREFIX}/lib
+add_custom_command(TARGET upstream_igh_eml POST_BUILD
+    COMMAND cp 
+     ${source_dir}/../../lib/libethercat.so
+     ${CATKIN_DEVEL_PREFIX}/lib
 )
 
-file(COPY
-  ${source_dir}/../../lib/libethercat.so.1.0.0
-  DESTINATION ${CATKIN_DEVEL_PREFIX}/lib
+add_custom_command(TARGET upstream_igh_eml POST_BUILD
+    COMMAND cp 
+      ${source_dir}/../../lib/libethercat.so.1
+      ${CATKIN_DEVEL_PREFIX}/lib
 )
+
+
+add_custom_command(TARGET upstream_igh_eml POST_BUILD
+    COMMAND cp 
+      ${source_dir}/../../lib/libethercat.so.1.0.0
+      ${CATKIN_DEVEL_PREFIX}/lib
+)
+
+
+
