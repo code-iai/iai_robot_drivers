@@ -14,18 +14,26 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 catkin_package(
-#   INCLUDE_DIRS include
-#  LIBRARIES vh_pixelmap
-  CATKIN_DEPENDS roscpp std_msgs igh_eml geometry_msgs message_runtime tf diagnostic_updater iai_control_msgs soft_runstop
-#  DEPENDS system_lib
+  CATKIN_DEPENDS 
+    roscpp 
+    std_msgs 
+    igh_eml 
+    geometry_msgs 
+    message_runtime 
+    tf 
+    diagnostic_updater 
+    iai_control_msgs 
+    soft_runstop
 )
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 
 add_executable(omni_ethercat src/omni_ethercat.cpp src/omnilib/omnilib.c src/omnilib/realtime.c)
 target_link_libraries(omni_ethercat ${catkin_LIBRARIES})
-add_dependencies(omni_ethercat ${catkin_EXPORTED_TARGETS})
-
+# NOTE: The following line is needed to halt our compilation until the CMake target
+#       upstream_igh_eml which is declared in package igh_eml has built. It would
+#       be nice to get this name through some variable. But I do not know how to do this.
+add_dependencies(omni_ethercat upstream_igh_eml)
 
 ##  #amaldo 20130726
 ##  #The following two variables keep the compilation rpath set on the binary
