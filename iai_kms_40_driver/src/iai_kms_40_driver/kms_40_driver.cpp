@@ -43,6 +43,7 @@ namespace iai_kms_40_driver
   bool KMS40Driver::start(const std::string& ip, const std::string port,
       const timeval& read_timeout, unsigned int frame_divider)
   {
+    paused_ = false;
     if ( !socket_conn_.open(ip, port, read_timeout) )
     {
       std::cout << "Errr during opening of socket.\n";

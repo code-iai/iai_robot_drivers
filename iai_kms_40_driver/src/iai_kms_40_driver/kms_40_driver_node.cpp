@@ -121,10 +121,12 @@ namespace iai_kms_40_driver
       return false;
     }
 
-    if ( !nh_.getParam("frame_divider", frame_divider) )
+    if ( !nh_.getParam("publish_rate", frame_divider) )
     {
       ROS_ERROR("Could not find ROS parameter for frame divider");
       return false;
+    } else {
+      frame_divider = 500/frame_divider;
     }
 
     if ( frame_divider > 500 || frame_divider < 1)
