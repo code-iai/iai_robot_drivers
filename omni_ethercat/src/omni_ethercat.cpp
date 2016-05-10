@@ -43,6 +43,10 @@ const int num_drives = 5;
 const double torso_ticks_to_m = 10000000;
 
 
+//FIXME: param that says which ethercat drives are what
+//example: drives 0-3 are on wheels, counterclockwise, starting on front left.
+//example: plus drive 4 is the torso
+
 class Omnidrive
 {
 private:
@@ -100,6 +104,9 @@ void Omnidrive::cmdArrived(const geometry_msgs::Twist::ConstPtr& msg)
   drive_[1] = msg->linear.y;
   drive_[2] = msg->angular.z;
 
+
+  //FIXME:  FUGLY, this needs to be fixed in omnilib.c (fix the jacobian)
+  //  plus, the direction of rotation and position of wheels needs to be documented
   //Rotate 180deg around the z axis
   drive_[0] = -drive_[0];
   drive_[1] = -drive_[1];
@@ -107,6 +114,11 @@ void Omnidrive::cmdArrived(const geometry_msgs::Twist::ConstPtr& msg)
   //also the z rotation was wrong
   drive_[2] = -drive_[2];
 
+
+
+  //Reset the filter to zero, to make it stop immediately
+  //Unnecessary if the vel filter is fixed
+  //FIXME: REMOVE this check
   if(msg->linear.z == -1) {
     // emergency brake!
     for(int i=0; i < 3; i++) {
@@ -119,6 +131,9 @@ void Omnidrive::cmdArrived(const geometry_msgs::Twist::ConstPtr& msg)
 }
 
 //torso:
+//FIXME: need param to turn torso into velocity or position resolved
+//FIXME: All topics receiving commands need a watchdog, this one too
+ 
 void Omnidrive::torsoCmdArrived(const std_msgs::Float64::ConstPtr& msg)
 {
 
@@ -179,6 +194,8 @@ void Omnidrive::stateUpdate(diagnostic_updater::DiagnosticStatusWrapper &s)
   power_pub_.publish(power);
 }
 
+
+//FIXME: Do we need this for this base? This allows to bring the ethercat drives down and up at wish
 void Omnidrive::powerCommand(const iai_control_msgs::PowerState::ConstPtr& msg)
 {
   if(msg->name == power_name_)
@@ -297,7 +314,8 @@ void Omnidrive::main()
 
     //Evil acceleration limitation
     // this runs in a slow loop
-    //TODO: Move to the high-speed loop for smoothness
+    //FIXME: Move to the high-speed loop for smoothness -> Maybe not needed, this loop is 250Hz.
+    //FIXME: Limit in twist-space, make it use time 
     
     for(int i=0; i < 3; i++) {
       // acceleration limiting
@@ -342,7 +360,7 @@ void Omnidrive::main()
     // publish hard runstop state
     // FIXME: report real hard E-stop status
     // in Rosie, the hard runstop was read from the ethercat drives
-    // in the new robot, we have to choose a DI an map it here
+    // in Boxy it is part of the state reported by the ELMO drives
     if(++runstop_publish_counter == runstop_send_rate) {
       int runstop=0;
       omnidrive_status(0,0,0,0,0, &runstop);
