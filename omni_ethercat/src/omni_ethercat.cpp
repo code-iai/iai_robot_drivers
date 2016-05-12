@@ -328,7 +328,9 @@ void Omnidrive::main()
       tf::Quaternion q;
       q.setRPY(0, 0, a);
       tf::Transform pose(q, tf::Point(x, y, 0.0));
+      // FIXME: publish this on a separate topic like /base/odom
       transforms.sendTransform(tf::StampedTransform(pose, ros::Time::now(), frame_id_, child_frame_id_));
+      // FIXME: publish actual base twist on topic like /base/vel
       tf_publish_counter = 0;
     }
 
@@ -339,6 +341,7 @@ void Omnidrive::main()
       msg.header.stamp = ros::Time::now();
       msg.name.push_back("triangle_base_joint");
       msg.position.push_back(torso_pos);
+      // FIXME: report the actual values
       msg.velocity.push_back(0.0);
       msg.effort.push_back(0.0);
       js_pub_.publish(msg);
