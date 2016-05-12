@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<package>
+<package format="2">
   <name>igh_eml</name>
   <version>0.0.1</version>
   <description>
@@ -13,6 +13,7 @@
   <author email="georg.bartels@cs.uni-bremen.de">Georg Bartels</author>
 
   <buildtool_depend>catkin</buildtool_depend>
+  <depend>autoconf</depend>
 
   <export>
   </export>
