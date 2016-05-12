@@ -115,18 +115,6 @@ void Omnidrive::cmdArrived(const geometry_msgs::Twist::ConstPtr& msg)
   drive_[2] = -drive_[2];
 
 
-
-  //Reset the filter to zero, to make it stop immediately
-  //Unnecessary if the vel filter is fixed
-  //FIXME: REMOVE this check
-  if(msg->linear.z == -1) {
-    // emergency brake!
-    for(int i=0; i < 3; i++) {
-      drive_last_[i] = 0;
-      drive_[i] = 0;
-    }
-  }
-
   watchdog_time_ = ros::Time::now();
 }
 
