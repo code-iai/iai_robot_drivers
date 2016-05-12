@@ -260,8 +260,8 @@ void Omnidrive::main()
 
   tf::TransformBroadcaster transforms;
 
-  ros::Subscriber sub = n_.subscribe("/cmd_vel", 10, &Omnidrive::cmdArrived, this);
-  ros::Subscriber sub_torso = n_.subscribe("/torso_cmd", 10, &Omnidrive::torsoCmdArrived, this); //torso
+  ros::Subscriber sub = n_.subscribe("/base/cmd_vel", 10, &Omnidrive::cmdArrived, this);
+  ros::Subscriber sub_torso = n_.subscribe("/torso/cmd_vel", 10, &Omnidrive::torsoCmdArrived, this); //torso
   ros::Publisher hard_runstop_pub = n_.advertise<std_msgs::Bool>("/hard_runstop", 1);
 
   double x=0, y=0, a=0, torso_pos=0;
