@@ -98,6 +98,7 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(D
 
 void Omnidrive::cmdArrived(const geometry_msgs::Twist::ConstPtr& msg)
 {
+  // FIXME: use TwistStamped instead of Twist and check that people command in the right frame
   // NOTE: No need for synchronization since this is called inside spinOnce() in the main loop
 
   drive_[0] = msg->linear.x;

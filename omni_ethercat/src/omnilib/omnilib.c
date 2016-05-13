@@ -225,6 +225,7 @@ int omnidrive_drive(double x, double y, double a, double torso_pos)
   jac_forward(cartesian_speeds, wheel_speeds);
 
   for(i = 0; i < 4; i++) {
+    //FIXME: scale the entire twist and NOT the wheels with a correction factor
     tar.target_velocity[i] = wheel_speeds[i] * corr * drive_constant;
     //tar.torque_set_value[i] = 0.0;
   }
