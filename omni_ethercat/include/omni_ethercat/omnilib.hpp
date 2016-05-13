@@ -39,6 +39,24 @@ namespace omni_ethercat
   {
     return getJacobian(params.lx, params.ly, params.drive_constant);
   }
+
+  Matrix43d getJacobianInverse(double lx, double ly, double drive_constant)
+  {
+    using Eigen::operator<<;
+    Matrix43d jac;
+    double a = drive_constant;
+    double b = drive_constant/(lx + ly);
+    jac << a, -a, -b,
+           a,  a,  b,
+           a,  a, -b,
+           a, -a,  b;
+    return jac;
+  }
+
+  Matrix43d getJacobianInverse(const JacParams& params)
+  {
+    return getJacobianInverse(params.lx, params.ly, params.drive_constant);
+  }
  
   Vector3d omniFK(double lx, double ly, double drive_constant, const Vector4d& delta_wheels)
   {
@@ -49,6 +67,17 @@ namespace omni_ethercat
   Vector3d omniFK(const JacParams& params, const Vector4d& delta_wheels)
   {
     return omniFK(params.lx, params.ly, params.drive_constant, delta_wheels);
+  }
+
+  Vector4d omniIK(double lx, double ly, double drive_constant, const Vector3d& twist_2d)
+  {
+    using Eigen::operator*;
+    return getJacobianInverse(lx, ly, drive_constant) * twist_2d;
+  }
+
+  Vector4d omniIK(const JacParams& params, const Vector3d& twist_2d)
+  {
+    return omniIK(params.lx, params.ly, params.drive_constant, twist_2d);
   }
 }
 
