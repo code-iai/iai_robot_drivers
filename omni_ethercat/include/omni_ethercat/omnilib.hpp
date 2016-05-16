@@ -27,7 +27,9 @@ namespace omni_ethercat
 {
   typedef Eigen::Matrix< double, 3, 4 > OmniJac;
   typedef Eigen::Matrix< double, 4, 3 > OmniJacInv;
+  typedef Eigen::Vector3d Pose2d;
   typedef Eigen::Vector3d Twist2d;
+  typedef Eigen::Vector4d OmniEncPos;
   typedef Eigen::Vector4d OmniEncVel;
 
   class JacParams
@@ -98,6 +100,30 @@ namespace omni_ethercat
   OmniEncVel omniIK(const JacParams& params, const Twist2d& twist_2d)
   {
     return omniIK(params.lx, params.ly, params.drive_constant, twist_2d);
+  }
+
+  Pose2d calcOdometry(const Pose2d& last_odom, const OdomEncPos& old_encoder_pos,
+      const OdomEncPos& current_encoder_pos, const JacParams&)
+  {
+    OmniEncVel delta_wheels = current_encoder_pos - old_encoder_pos;
+    Twist2d twist_2d = omniFK(JacParams, delta_wheels);
+    // TODO: move this into a separate function
+    // TODO: figure out why we are using only half of the rotational velocity
+    double angle = last_odom(2) + twist_2d(2)/2.0;
+    Eigen::Matrix< double, 3, 3 > transform;
+    using Eigen::operator<<;
+    transform << cos(angle), -sin(angle),  0,
+                 sin(angle),  cos(angle),  0,
+                 0         ,  0         ,  1;
+
+    return transform * twist_2d + last_odom;
+  }
+
+  Pose2d calcOdometry(const Pose2d& last_odom, const OdomEncPos& old_encoder_pos,
+      const OdomEncPos& current_encoder_pos, double lx, double ly, double drive_constant)
+  {
+    return calcOdometry(last_odom, old_encoder_pos, current_encoder_pos, 
+        JacParams(lx, ly, drive_constant));
   }
 }
 
