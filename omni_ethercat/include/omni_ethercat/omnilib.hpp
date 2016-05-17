@@ -76,8 +76,8 @@ namespace omni_ethercat
     Eigen::Matrix< double, 3, 3 > transform_matrix;
     using Eigen::operator<<;
     transform_matrix << cos(angle), -sin(angle),  0,
-                 sin(angle),  cos(angle),  0,
-                 0         ,  0         ,  1;
+                        sin(angle),  cos(angle),  0,
+                        0         ,  0         ,  1;
     return transform_matrix * twist;
   }
 
@@ -152,13 +152,13 @@ namespace omni_ethercat
       return twist;
   }
 
-  inline Twist2d limitedTwist(const Twist2d& twist, const Twist2d& max_twist)
+  inline Twist2d limitTwist(const Twist2d& twist, const Twist2d& max_twist)
   {
     using Eigen::operator/;
 
-    if (max_twist.array().abs().cwiseEqual(0.0).count() > 0)
-      throw std::runtime_error("At least one element of maximum twist contains 0.0.");
-    double max_twist_ratio = (twist.array().abs() / max_twist.array().abs()).lpNorm<Eigen::Infinity>();
+    if (max_twist.array().cwiseEqual(0.0).count() > 0)
+      throw std::runtime_error("At least one element of maximum twist equals 0.0.");
+    double max_twist_ratio = (twist.array()/max_twist.array()).matrix().lpNorm<Eigen::Infinity>();
     if (max_twist_ratio > 1.0)
       return twist / max_twist_ratio;
     else

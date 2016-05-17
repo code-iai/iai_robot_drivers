@@ -31,11 +31,14 @@ class OmnilibTest : public ::testing::Test
       params.ly = 0.303495;
       params.drive_constant = 626594.7934;
       max_wheel_speed = 600000;
+      using Eigen::operator<<;
+      max_twist << 0.3, 0.4, 0.2;
     }
 
     virtual void TearDown(){}
 
     omni_ethercat::JacParams params;
+    omni_ethercat::Twist2d max_twist;
     double max_wheel_speed;
 
 };
@@ -440,4 +443,33 @@ TEST_F(OmnilibTest, LimitTwistWheelSpeed)
   expectTwist2dEqual(limited_twist_cmd / limited_twist_cmd.norm(), twist_cmd / twist_cmd.norm());
   EXPECT_EQ((limited_wheel_speeds.array().abs() < OmniEncVel::Constant(std::abs(max_wheel_speed)).array()).count(), 3);
   EXPECT_EQ((limited_wheel_speeds.array().abs() == OmniEncVel::Constant(std::abs(max_wheel_speed)).array()).count(), 1);
+}
+
+TEST_F(OmnilibTest, LimitTwistMaxTwist)
+{
+  using namespace omni_ethercat;
+  using Eigen::operator<<;
+
+  // TEST CASE 0: nothing for zero twist command
+  Twist2d twist_cmd = Twist2d::Zero();
+  Twist2d twist_cmd_limited = limitTwist(twist_cmd, max_twist);
+  expectTwist2dEqual(twist_cmd_limited, twist_cmd);
+
+  // TEST CASE 1: nothing for twist command below maximum
+  twist_cmd << 0.15, 0.0, 0.0;
+  twist_cmd_limited = limitTwist(twist_cmd, max_twist);
+  expectTwist2dEqual(twist_cmd_limited, twist_cmd);
+
+  // TEST CASE 2: limit large twist with only one non-zero component
+  twist_cmd << 2.35, 0.0, 0.0;
+  Twist2d tmp_twist;
+  tmp_twist << 0.3, 0.0, 0.0;
+  twist_cmd_limited = limitTwist(twist_cmd, max_twist);
+  expectTwist2dEqual(twist_cmd_limited, tmp_twist);
+
+  // TEST CASE 3: limit large twist with all non-zero components
+  twist_cmd << 0.5, 0.5, 0.4;
+  tmp_twist << 0.25, 0.25, 0.2;
+  twist_cmd_limited = limitTwist(twist_cmd, max_twist);
+  expectTwist2dEqual(twist_cmd_limited, tmp_twist);
 }
