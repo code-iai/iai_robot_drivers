@@ -31,7 +31,10 @@ catkin_package(
     Eigen
 )
 
-include_directories(include ${catkin_INCLUDE_DIRS} ${Eigen_INCLUDE_DIR})
+include_directories(
+  include 
+  ${catkin_INCLUDE_DIRS} 
+  ${Eigen_INCLUDE_DIR})
 
 add_executable(omni_ethercat src/omni_ethercat.cpp src/omnilib/omnilib.c src/omnilib/realtime.c)
 target_link_libraries(omni_ethercat ${catkin_LIBRARIES})
@@ -40,9 +43,13 @@ target_link_libraries(omni_ethercat ${catkin_LIBRARIES})
 #       be nice to get this name through some variable. But I do not know how to do this.
 add_dependencies(omni_ethercat upstream_igh_eml)
 
-catkin_add_gtest(${PROJECT_NAME}-test test/${PROJECT_NAME}/omnilib.cpp test/main.cpp
-  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test_data)
+catkin_add_gtest(${PROJECT_NAME}-test test/${PROJECT_NAME}/omnilib.cpp test/main.cpp)
+  #  NOTE: uncomment this as part of CATKIN_ADD_GTEST if you want to specify test data.
+  #
+  #  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test_data)
 if(TARGET ${PROJECT_NAME}-test)
-  target_link_libraries(${PROJECT_NAME}-test ${catkin_LIBRARIES})
-  add_dependencies(${PROJECT_NAME}-test ${catkin_LIBRARIES})
+  find_package(orocos_kdl REQUIRED)
+  include_directories(${orocos_kdl_INCLUDE_DIRS})
+  target_link_libraries(${PROJECT_NAME}-test ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES})
+  add_dependencies(${PROJECT_NAME}-test ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES})
 endif()

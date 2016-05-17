@@ -70,6 +70,17 @@ namespace omni_ethercat
     return twist;
   }
 
+  inline Twist2d changeReferenceFrame(const Pose2d& pose, const Twist2d& twist)
+  {
+    double angle = pose(2);
+    Eigen::Matrix< double, 3, 3 > transform_matrix;
+    using Eigen::operator<<;
+    transform_matrix << cos(angle), -sin(angle),  0,
+                 sin(angle),  cos(angle),  0,
+                 0         ,  0         ,  1;
+    return transform_matrix * twist;
+  }
+
   class JacParams
   {
     public:
@@ -87,11 +98,11 @@ namespace omni_ethercat
   {
     using Eigen::operator<<;
     OmniJac jac;
-    double a = drive_constant * 4.0;
-    double b = drive_constant * (lx + ly);
-    jac << 1/a,  1/a,  1/a,  1/a,
-          -1/a,  1/a,  1/a,  -1/a,
-          -1/b, 1/b, -1/b, 1/b;
+    double a = 1.0 / (4.0 * drive_constant);
+    double b = 1.0 / (4.0 * (lx + ly) * drive_constant);
+    jac << a,  a,  a,  a,
+          -a,  a,  a,  -a,
+          -b, b, -b, b;
     return jac;
   }
 
@@ -105,7 +116,7 @@ namespace omni_ethercat
     using Eigen::operator<<;
     OmniJacInv jac;
     double a = drive_constant;
-    double b = drive_constant/(lx + ly);
+    double b = (lx + ly) * drive_constant;
     jac << a, -a, -b,
            a,  a,  b,
            a,  a, -b,
@@ -140,28 +151,18 @@ namespace omni_ethercat
     return omniIK(params.lx, params.ly, params.drive_constant, twist_2d);
   }
 
-  Pose2d calcOdometry(const Pose2d& last_odom, const OdomEncPos& old_encoder_pos,
-      const OdomEncPos& current_encoder_pos, const JacParams&)
+  inline Pose2d nextOdometry(const Pose2d& last_odom, const OmniEncVel& current_encoder_diff,
+      const JacParams& params)
   {
-    OmniEncVel delta_wheels = current_encoder_pos - old_encoder_pos;
-    Twist2d twist_2d = omniFK(JacParams, delta_wheels);
-    // TODO: move this into a separate function
-    // TODO: figure out why we are using only half of the rotational velocity
-    double angle = last_odom(2) + twist_2d(2)/2.0;
-    Eigen::Matrix< double, 3, 3 > transform;
-    using Eigen::operator<<;
-    transform << cos(angle), -sin(angle),  0,
-                 sin(angle),  cos(angle),  0,
-                 0         ,  0         ,  1;
-
-    return transform * twist_2d + last_odom;
+    Twist2d twist_2d_in_base = omniFK(params, current_encoder_diff);
+    Twist2d twist_2d_in_odom = changeReferenceFrame(last_odom, twist_2d_in_base);
+    return twist_2d_in_odom + last_odom;
   }
 
-  Pose2d calcOdometry(const Pose2d& last_odom, const OdomEncPos& old_encoder_pos,
-      const OdomEncPos& current_encoder_pos, double lx, double ly, double drive_constant)
+  inline Pose2d nextOdometry(const Pose2d& last_odom, const OmniEncVel& current_encoder_diff,
+      double lx, double ly, double drive_constant)
   {
-    return calcOdometry(last_odom, old_encoder_pos, current_encoder_pos, 
-        JacParams(lx, ly, drive_constant));
+    return nextOdometry(last_odom, current_encoder_diff, JacParams(lx, ly, drive_constant));
   }
 }
 

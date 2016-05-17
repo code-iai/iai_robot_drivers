@@ -30,5 +30,6 @@
   <depend>soft_runstop</depend>
   <depend>message_runtime</depend>
   <test_depend>gtest</test_depend>
+  <test_depend>orocos_kdl</test_depend>
 
 </package>

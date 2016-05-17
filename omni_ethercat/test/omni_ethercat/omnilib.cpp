@@ -20,6 +20,7 @@
 
 #include <gtest/gtest.h>
 #include <omni_ethercat/omnilib.hpp>
+#include <kdl/frames.hpp>
 
 class OmnilibTest : public ::testing::Test
 {
@@ -359,4 +360,33 @@ TEST_F(OmnilibTest, Twist2dMsgConversions)
   expectTwist2dEqual(twist, fromTwistMsg(toTwistMsg(twist)));
   twist << -1.1, 2.2, -13.3;
   expectTwist2dEqual(twist, fromTwistMsg(toTwistMsg(twist)));
+}
+
+omni_ethercat::Pose2d fromKDLFrame(const KDL::Frame& frame)
+{
+  omni_ethercat::Pose2d pose;
+  pose(0) = frame.p.x();
+  pose(1) = frame.p.y();
+  KDL::Vector rot_axis(0.0, 0.0, 1.0);
+  pose(2) = frame.M.GetRotAngle(rot_axis);
+  return pose;
+}
+
+KDL::Frame toKDLFrame(const omni_ethercat::Pose2d& pose)
+{
+  return KDL::Frame(KDL::Rotation::RotZ(pose(2)), KDL::Vector(pose(0), pose(1), 0.0));
+}
+
+TEST_F(OmnilibTest, NextOdometry)
+{
+  using namespace omni_ethercat;
+  KDL::Frame f1(KDL::Rotation::RotZ(M_PI/4.0), KDL::Vector(0.1, -0.2, 0.0));
+  KDL::Frame f2(KDL::Rotation::RotZ(M_PI/8.0), KDL::Vector(0.15, -0.25, 0.0));
+  EXPECT_TRUE(KDL::Equal(f1, toKDLFrame(fromKDLFrame(f1))));
+  EXPECT_TRUE(KDL::Equal(f2, toKDLFrame(fromKDLFrame(f2))));
+  Pose2d p1 = fromKDLFrame(f1);
+  Pose2d p2 = nextOdometry(Pose2d(), omniIK(params, fromKDLFrame(f1)), params);
+  using Eigen::operator<<;
+  std::cout << p1 << std::endl << p2 << std::endl;
+  expectPose2dEqual(p1, p2);
 }
