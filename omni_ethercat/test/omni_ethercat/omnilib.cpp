@@ -310,3 +310,53 @@ TEST_F(OmnilibTest, omniIKRotateNegative)
   EXPECT_DOUBLE_EQ(omni_enc_vel(1), omni_enc_vel(3));
   EXPECT_DOUBLE_EQ(omni_enc_vel(0), -omni_enc_vel(1));
 }
+
+void expectPose2dEqual(const omni_ethercat::Pose2d& a, const omni_ethercat::Pose2d& b,
+    double delta = 1.0e-15)
+{
+  EXPECT_DOUBLE_EQ(a(0), b(0));
+  EXPECT_DOUBLE_EQ(a(1), b(1));
+
+  // check that angle difference is zero
+  double angle_diff = a(2) - b(2);
+  angle_diff = std::fmod(angle_diff, 2.0*M_PI); // in range [0, 2PI[
+  if(angle_diff > M_PI)
+    angle_diff -= 2.0*M_PI; // in range [-PI, PI[
+  angle_diff = std::abs(angle_diff); // in range [0, PI[
+  EXPECT_LT(angle_diff, delta);
+}
+
+void expectTwist2dEqual(const omni_ethercat::Twist2d& a, const omni_ethercat::Twist2d& b)
+{
+  EXPECT_DOUBLE_EQ(a(0), b(0));
+  EXPECT_DOUBLE_EQ(a(1), b(1));
+  EXPECT_DOUBLE_EQ(a(2), b(2));
+}
+
+TEST_F(OmnilibTest, Pose2dMsgConversions)
+{
+  using namespace omni_ethercat;
+  using Eigen::operator<<;
+  Pose2d pose;
+  pose << 0.0, 0.0, 0.0;
+  expectPose2dEqual(pose, fromPoseMsg(toPoseMsg(pose)));
+  pose << 1.1, -2.2, 3.3;
+  expectPose2dEqual(pose, fromPoseMsg(toPoseMsg(pose)));
+  pose << -0.1, -0.2, -0.3;
+  expectPose2dEqual(pose, fromPoseMsg(toPoseMsg(pose)));
+}
+
+TEST_F(OmnilibTest, Twist2dMsgConversions)
+{
+  using namespace omni_ethercat;
+  using Eigen::operator<<;
+  Twist2d twist;
+  twist << 0.0, 0.0, 0.0;
+  expectTwist2dEqual(twist, fromTwistMsg(toTwistMsg(twist)));
+  twist << 0.1, 0.2, 0.3;
+  expectTwist2dEqual(twist, fromTwistMsg(toTwistMsg(twist)));
+  twist << -1.1, -2.2, -3.3;
+  expectTwist2dEqual(twist, fromTwistMsg(toTwistMsg(twist)));
+  twist << -1.1, 2.2, -13.3;
+  expectTwist2dEqual(twist, fromTwistMsg(toTwistMsg(twist)));
+}

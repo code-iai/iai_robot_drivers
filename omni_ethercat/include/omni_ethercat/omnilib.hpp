@@ -22,6 +22,8 @@
 #define OMNI_ETHERCAT_OMNILIB_HPP
 
 #include <eigen3/Eigen/Dense>
+#include <tf/transform_datatypes.h>
+#include <geometry_msgs/Twist.h>
 
 namespace omni_ethercat
 {
@@ -31,6 +33,42 @@ namespace omni_ethercat
   typedef Eigen::Vector3d Twist2d;
   typedef Eigen::Vector4d OmniEncPos;
   typedef Eigen::Vector4d OmniEncVel;
+
+  inline geometry_msgs::Pose toPoseMsg(const Pose2d& pose)
+  {
+    geometry_msgs::Pose msg;
+    msg.position.x = pose(0);
+    msg.position.y = pose(1);
+    msg.orientation = tf::createQuaternionMsgFromYaw(pose(2));
+    return msg;
+  }
+
+  inline Pose2d fromPoseMsg(const geometry_msgs::Pose& msg)
+  {
+    Pose2d pose;
+    pose(0) = msg.position.x;
+    pose(1) = msg.position.y;
+    pose(2) = tf::getYaw(msg.orientation);
+    return pose;
+  }
+
+  inline geometry_msgs::Twist toTwistMsg(const Twist2d& twist)
+  {
+    geometry_msgs::Twist msg;
+    msg.linear.x = twist(0);
+    msg.linear.y = twist(1);
+    msg.angular.z = twist(2);
+    return msg;
+  }
+
+  inline Twist2d fromTwistMsg(const geometry_msgs::Twist& msg)
+  {
+    Twist2d twist;
+    twist(0) = msg.linear.x;
+    twist(1) = msg.linear.y;
+    twist(2) = msg.angular.z;
+    return twist;
+  }
 
   class JacParams
   {
