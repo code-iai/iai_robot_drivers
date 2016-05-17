@@ -45,7 +45,7 @@ namespace omni_ethercat
       double lx, ly, drive_constant;
   };
 
-  OmniJac getJacobian(double lx, double ly, double drive_constant)
+  inline OmniJac getJacobian(double lx, double ly, double drive_constant)
   {
     using Eigen::operator<<;
     OmniJac jac;
@@ -57,12 +57,12 @@ namespace omni_ethercat
     return jac;
   }
 
-  OmniJac getJacobian(const JacParams& params)
+  inline OmniJac getJacobian(const JacParams& params)
   {
     return getJacobian(params.lx, params.ly, params.drive_constant);
   }
 
-  OmniJacInv getJacobianInverse(double lx, double ly, double drive_constant)
+  inline OmniJacInv getJacobianInverse(double lx, double ly, double drive_constant)
   {
     using Eigen::operator<<;
     OmniJacInv jac;
@@ -75,29 +75,29 @@ namespace omni_ethercat
     return jac;
   }
 
-  OmniJacInv getJacobianInverse(const JacParams& params)
+  inline OmniJacInv getJacobianInverse(const JacParams& params)
   {
     return getJacobianInverse(params.lx, params.ly, params.drive_constant);
   }
  
-  Twist2d omniFK(double lx, double ly, double drive_constant, const OmniEncVel& delta_wheels)
+  inline Twist2d omniFK(double lx, double ly, double drive_constant, const OmniEncVel& delta_wheels)
   {
     using Eigen::operator*;
     return getJacobian(lx, ly, drive_constant) * delta_wheels;
   }
 
-  Twist2d omniFK(const JacParams& params, const OmniEncVel& delta_wheels)
+  inline Twist2d omniFK(const JacParams& params, const OmniEncVel& delta_wheels)
   {
     return omniFK(params.lx, params.ly, params.drive_constant, delta_wheels);
   }
 
-  OmniEncVel omniIK(double lx, double ly, double drive_constant, const Twist2d& twist_2d)
+  inline OmniEncVel omniIK(double lx, double ly, double drive_constant, const Twist2d& twist_2d)
   {
     using Eigen::operator*;
     return getJacobianInverse(lx, ly, drive_constant) * twist_2d;
   }
 
-  OmniEncVel omniIK(const JacParams& params, const Twist2d& twist_2d)
+  inline OmniEncVel omniIK(const JacParams& params, const Twist2d& twist_2d)
   {
     return omniIK(params.lx, params.ly, params.drive_constant, twist_2d);
   }
