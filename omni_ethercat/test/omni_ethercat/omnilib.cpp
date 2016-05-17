@@ -30,11 +30,13 @@ class OmnilibTest : public ::testing::Test
       params.lx = 0.39225;
       params.ly = 0.303495;
       params.drive_constant = 626594.7934;
+      max_wheel_speed = 600000;
     }
 
     virtual void TearDown(){}
 
     omni_ethercat::JacParams params;
+    double max_wheel_speed;
 
 };
 
@@ -402,4 +404,40 @@ TEST_F(OmnilibTest, NextOdometry)
       nextOdometry(
           nextOdometry(Pose2d::Zero(), omniIK(params, fromKDLFrame(f1)), params),
           omniIK(params, fromKDLFrame(f2)), params));
+}
+
+TEST_F(OmnilibTest, LimitTwistWheelSpeed)
+{
+  using namespace omni_ethercat;
+  using Eigen::operator<<;
+  
+  // TEST CASE 0: nothing for zero twist command
+  Twist2d twist_cmd = Twist2d::Zero();
+  Twist2d limited_twist_cmd = limitTwist(twist_cmd, params, max_wheel_speed);
+  expectTwist2dEqual(limited_twist_cmd, twist_cmd);
+
+  // TEST CASE 1: nothing for twist command with some zeros and low norm
+  twist_cmd << 0.1, 0.0, 0.0;
+  limited_twist_cmd = limitTwist(twist_cmd, params, max_wheel_speed);
+  expectTwist2dEqual(limited_twist_cmd, twist_cmd);
+
+  // TEST CASE 2: nothing for twist command with low norm
+  twist_cmd << 0.1, 0.1, 0.1;
+  limited_twist_cmd = limitTwist(twist_cmd, params, max_wheel_speed);
+  expectTwist2dEqual(limited_twist_cmd, twist_cmd);
+
+  // TEST CASE 3: limit twist command which has all wheels too fast
+  twist_cmd << 0.0, 0.0, 2.0;
+  limited_twist_cmd = limitTwist(twist_cmd, params, max_wheel_speed);
+  OmniEncVel limited_wheel_speeds = omniIK(params, limited_twist_cmd);
+  expectTwist2dEqual(limited_twist_cmd / limited_twist_cmd.norm(), twist_cmd / twist_cmd.norm());
+  EXPECT_EQ((limited_wheel_speeds.array().abs() == OmniEncVel::Constant(std::abs(max_wheel_speed)).array()).count(), 4);
+
+  // TEST CASE 4: limit twist command which has one wheel too fast
+  twist_cmd << 0.7, -0.7, -0.7;
+  limited_twist_cmd = limitTwist(twist_cmd, params, max_wheel_speed);
+  limited_wheel_speeds = omniIK(params, limited_twist_cmd);
+  expectTwist2dEqual(limited_twist_cmd / limited_twist_cmd.norm(), twist_cmd / twist_cmd.norm());
+  EXPECT_EQ((limited_wheel_speeds.array().abs() < OmniEncVel::Constant(std::abs(max_wheel_speed)).array()).count(), 3);
+  EXPECT_EQ((limited_wheel_speeds.array().abs() == OmniEncVel::Constant(std::abs(max_wheel_speed)).array()).count(), 1);
 }

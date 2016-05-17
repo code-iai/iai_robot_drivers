@@ -138,6 +138,17 @@ namespace omni_ethercat
     Twist2d twist_2d_in_odom = changeReferenceFrame(last_odom, twist_2d_in_base);
     return twist_2d_in_odom + last_odom;
   }
+
+  inline Twist2d limitTwist(const Twist2d& twist, const JacParams& params, double max_wheel_speed)
+  {
+    OmniEncVel wheel_speeds = omniIK(params, twist);
+    double highest_wheel_speed = wheel_speeds.lpNorm<Eigen::Infinity>();
+    if (std::abs(highest_wheel_speed) > 0.0 && // protect against division by zero
+        std::abs(highest_wheel_speed) > std::abs(max_wheel_speed) )
+      return std::abs(max_wheel_speed / highest_wheel_speed ) * twist;
+    else
+      return twist;
+  }
 }
 
 #endif // OMNI_ETHERCAT_OMNILIB_HPP
