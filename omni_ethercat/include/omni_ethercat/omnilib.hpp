@@ -94,29 +94,24 @@ namespace omni_ethercat
       double lx, ly, drive_constant;
   };
 
-  inline OmniJac getJacobian(double lx, double ly, double drive_constant)
+  inline OmniJac getJacobian(const JacParams& params)
   {
     using Eigen::operator<<;
     OmniJac jac;
-    double a = 1.0 / (4.0 * drive_constant);
-    double b = 1.0 / (4.0 * (lx + ly) * drive_constant);
+    double a = 1.0 / (4.0 * params.drive_constant);
+    double b = 1.0 / (4.0 * (params.lx + params.ly) * params.drive_constant);
     jac << a,  a,  a,  a,
           -a,  a,  a,  -a,
           -b, b, -b, b;
     return jac;
   }
 
-  inline OmniJac getJacobian(const JacParams& params)
-  {
-    return getJacobian(params.lx, params.ly, params.drive_constant);
-  }
-
-  inline OmniJacInv getJacobianInverse(double lx, double ly, double drive_constant)
+  inline OmniJacInv getJacobianInverse(const JacParams& params)
   {
     using Eigen::operator<<;
     OmniJacInv jac;
-    double a = drive_constant;
-    double b = (lx + ly) * drive_constant;
+    double a = params.drive_constant;
+    double b = (params.lx + params.ly) * params.drive_constant;
     jac << a, -a, -b,
            a,  a,  b,
            a,  a, -b,
@@ -124,31 +119,16 @@ namespace omni_ethercat
     return jac;
   }
 
-  inline OmniJacInv getJacobianInverse(const JacParams& params)
-  {
-    return getJacobianInverse(params.lx, params.ly, params.drive_constant);
-  }
- 
-  inline Twist2d omniFK(double lx, double ly, double drive_constant, const OmniEncVel& delta_wheels)
-  {
-    using Eigen::operator*;
-    return getJacobian(lx, ly, drive_constant) * delta_wheels;
-  }
-
   inline Twist2d omniFK(const JacParams& params, const OmniEncVel& delta_wheels)
   {
-    return omniFK(params.lx, params.ly, params.drive_constant, delta_wheels);
-  }
-
-  inline OmniEncVel omniIK(double lx, double ly, double drive_constant, const Twist2d& twist_2d)
-  {
     using Eigen::operator*;
-    return getJacobianInverse(lx, ly, drive_constant) * twist_2d;
+    return getJacobian(params) * delta_wheels;
   }
 
   inline OmniEncVel omniIK(const JacParams& params, const Twist2d& twist_2d)
   {
-    return omniIK(params.lx, params.ly, params.drive_constant, twist_2d);
+    using Eigen::operator*;
+    return getJacobianInverse(params) * twist_2d;
   }
 
   inline Pose2d nextOdometry(const Pose2d& last_odom, const OmniEncVel& current_encoder_diff,
@@ -157,12 +137,6 @@ namespace omni_ethercat
     Twist2d twist_2d_in_base = omniFK(params, current_encoder_diff);
     Twist2d twist_2d_in_odom = changeReferenceFrame(last_odom, twist_2d_in_base);
     return twist_2d_in_odom + last_odom;
-  }
-
-  inline Pose2d nextOdometry(const Pose2d& last_odom, const OmniEncVel& current_encoder_diff,
-      double lx, double ly, double drive_constant)
-  {
-    return nextOdometry(last_odom, current_encoder_diff, JacParams(lx, ly, drive_constant));
   }
 }
 
