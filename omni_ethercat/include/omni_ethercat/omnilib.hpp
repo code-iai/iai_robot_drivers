@@ -143,9 +143,24 @@ namespace omni_ethercat
   {
     OmniEncVel wheel_speeds = omniIK(params, twist);
     double highest_wheel_speed = wheel_speeds.lpNorm<Eigen::Infinity>();
+    if (std::abs(max_wheel_speed) == 0.0)
+      throw std::runtime_error("Maximum wheel speed is 0.0.");
     if (std::abs(highest_wheel_speed) > 0.0 && // protect against division by zero
         std::abs(highest_wheel_speed) > std::abs(max_wheel_speed) )
       return std::abs(max_wheel_speed / highest_wheel_speed ) * twist;
+    else
+      return twist;
+  }
+
+  inline Twist2d limitedTwist(const Twist2d& twist, const Twist2d& max_twist)
+  {
+    using Eigen::operator/;
+
+    if (max_twist.array().abs().cwiseEqual(0.0).count() > 0)
+      throw std::runtime_error("At least one element of maximum twist contains 0.0.");
+    double max_twist_ratio = (twist.array().abs() / max_twist.array().abs()).lpNorm<Eigen::Infinity>();
+    if (max_twist_ratio > 1.0)
+      return twist / max_twist_ratio;
     else
       return twist;
   }
