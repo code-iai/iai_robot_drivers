@@ -312,6 +312,13 @@ TEST_F(OmnilibTest, omniIKRotateNegative)
   EXPECT_DOUBLE_EQ(omni_enc_vel(0), -omni_enc_vel(1));
 }
 
+TEST_F(OmnilibTest, omniRoundtrip)
+{
+  Eigen::Matrix3d M = 
+      omni_ethercat::getJacobian(params) * omni_ethercat::getJacobianInverse(params);
+  EXPECT_EQ( M.cwiseEqual(Eigen::Matrix3d::Identity()).count(), M.rows()*M.cols() );
+}
+
 void expectPose2dEqual(const omni_ethercat::Pose2d& a, const omni_ethercat::Pose2d& b,
     double delta = 1.0e-15)
 {
@@ -338,8 +345,7 @@ TEST_F(OmnilibTest, Pose2dMsgConversions)
 {
   using namespace omni_ethercat;
   using Eigen::operator<<;
-  Pose2d pose;
-  pose << 0.0, 0.0, 0.0;
+  Pose2d pose = Pose2d::Zero();
   expectPose2dEqual(pose, fromPoseMsg(toPoseMsg(pose)));
   pose << 1.1, -2.2, 3.3;
   expectPose2dEqual(pose, fromPoseMsg(toPoseMsg(pose)));
@@ -351,8 +357,7 @@ TEST_F(OmnilibTest, Twist2dMsgConversions)
 {
   using namespace omni_ethercat;
   using Eigen::operator<<;
-  Twist2d twist;
-  twist << 0.0, 0.0, 0.0;
+  Twist2d twist = Twist2d::Zero();
   expectTwist2dEqual(twist, fromTwistMsg(toTwistMsg(twist)));
   twist << 0.1, 0.2, 0.3;
   expectTwist2dEqual(twist, fromTwistMsg(toTwistMsg(twist)));
@@ -384,9 +389,17 @@ TEST_F(OmnilibTest, NextOdometry)
   KDL::Frame f2(KDL::Rotation::RotZ(M_PI/8.0), KDL::Vector(0.15, -0.25, 0.0));
   EXPECT_TRUE(KDL::Equal(f1, toKDLFrame(fromKDLFrame(f1))));
   EXPECT_TRUE(KDL::Equal(f2, toKDLFrame(fromKDLFrame(f2))));
-  Pose2d p1 = fromKDLFrame(f1);
-  Pose2d p2 = nextOdometry(Pose2d(), omniIK(params, fromKDLFrame(f1)), params);
-  using Eigen::operator<<;
-  std::cout << p1 << std::endl << p2 << std::endl;
-  expectPose2dEqual(p1, p2);
+
+  // TEST CASE 1: one odometry step, IDENTITY -> IDENTITY
+  expectPose2dEqual(Pose2d::Zero(), nextOdometry(Pose2d::Zero(), OmniEncVel::Zero(), params));
+
+  // TEST CASE 2: one odometry step, IDENTITY -> F1
+  expectPose2dEqual(fromKDLFrame(f1), 
+      nextOdometry(Pose2d::Zero(), omniIK(params, fromKDLFrame(f1)), params));
+
+  // TEST CASE 3: two odometry steps, IDENTIY -> F1 -> F1*F2
+  expectPose2dEqual(fromKDLFrame(f1*f2), 
+      nextOdometry(
+          nextOdometry(Pose2d::Zero(), omniIK(params, fromKDLFrame(f1)), params),
+          omniIK(params, fromKDLFrame(f2)), params));
 }
