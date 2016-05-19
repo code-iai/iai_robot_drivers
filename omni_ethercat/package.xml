@@ -21,6 +21,7 @@
 
   <depend>igh_eml</depend>
   <depend>roscpp</depend>
+  <depend>eigen</depend>
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>tf</depend>
@@ -28,5 +29,7 @@
   <depend>iai_control_msgs</depend>
   <depend>soft_runstop</depend>
   <depend>message_runtime</depend>
+  <test_depend>gtest</test_depend>
+  <test_depend>orocos_kdl</test_depend>
 
 </package>
