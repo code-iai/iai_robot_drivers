@@ -6,8 +6,11 @@ find_package(catkin REQUIRED)
 include(ExternalProject)
 ExternalProject_Add(upstream_igh_eml    # Name for custom target
 # #--Download step--------------
-  HG_REPOSITORY http://hg.code.sf.net/p/etherlabmaster/code         # URL of mercurial repo
-  HG_TAG 792892ab4806                # Mercurial branch name, commit id or tag
+  #HG_REPOSITORY http://hg.code.sf.net/p/etherlabmaster/code         # URL of mercurial repo
+  #HG_TAG 792892ab4806                # Mercurial branch name, commit id or tag
+  #Switch to a UniBremen mirror of the upstream igh code (faster than sourceforge)
+  GIT_REPOSITORY https://gitlab.informatik.uni-bremen.de/amaldo/igh_eml_upstream_clone.git
+  GIT_TAG d598ab86741cc7b60b3a169a1cee06b24dd83f89
   TIMEOUT 30           # Time allowed for file download operations
 # #--Update/Patch step----------
   UPDATE_COMMAND touch <SOURCE_DIR>/config.h COMMAND mkdir -p <SOURCE_DIR>/include <SOURCE_DIR>/lib    # Source work-tree update command
