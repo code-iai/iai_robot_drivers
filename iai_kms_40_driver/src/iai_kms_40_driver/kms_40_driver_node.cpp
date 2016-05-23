@@ -45,28 +45,10 @@ namespace iai_kms_40_driver
   {
     pub_ = nh_.advertise<geometry_msgs::WrenchStamped>("wrench", 1);
     tare_service_ = nh_.advertiseService("set_tare", &KMS40DriverNode::tare_service_callback, this);
-    tare_service_ = nh_.advertiseService("set_hz", &KMS40DriverNode::hz_service_callback, this);
   }
   
   KMS40DriverNode::~KMS40DriverNode()
   { 
-  }
-
-  bool KMS40DriverNode::hz_service_callback(iai_kms_40_msgs::SetHz::Request& req, iai_kms_40_msgs::SetHz::Response& res){
-    if (req.Hz == 0){
-      driver_.publicKmsServiceRequest("LDIV()\n", "\n");
-      return true;
-    }
-    bool result = false;
-    std::ostringstream response, request;
-    int frame_divider = 500/req.Hz;
-    // std::cout << req.Hz << std::endl;
-    // std::cout << frame_divider << std::endl;
-    request << "LDIV(" << frame_divider << ")\n";
-    response << "LDIV=" << frame_divider << "\n";    
-    result = driver_.publicKmsServiceRequest(request.str(), response.str());
-    res.success = result;
-    return result; 
   }
 
   bool KMS40DriverNode::tare_service_callback(iai_kms_40_msgs::SetTare::Request& req, iai_kms_40_msgs::SetTare::Response& res)

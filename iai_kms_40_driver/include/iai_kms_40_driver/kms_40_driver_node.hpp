@@ -53,7 +53,6 @@ namespace iai_kms_40_driver
       bool startUp();
       void loop();
       bool tare_service_callback(iai_kms_40_msgs::SetTare::Request& req, iai_kms_40_msgs::SetTare::Response& res);
-      bool hz_service_callback(iai_kms_40_msgs::SetHz::Request& req, iai_kms_40_msgs::SetHz::Response& res);
   };
 } // namespace iai_kms_40_driver
 #endif // IAI_KMS_40_DRIVER_KMS_40_DRIVER_NODE_HPP_

@@ -64,6 +64,7 @@ namespace iai_kms_40_driver
     }
 
     // creating the socket
+    std::cout << host_info_list->ai_protocol << std::endl;
     socket_fd_ = socket(host_info_list->ai_family, host_info_list->ai_socktype,
         host_info_list->ai_protocol);
     if (socket_fd_ == -1)
@@ -124,13 +125,15 @@ namespace iai_kms_40_driver
       std::cout << "Error during reading: receive error!" << std::endl ;
       return "";
     }
-    return std::string(in_buffer, bytes_received);
+    std::string response = std::string(in_buffer, bytes_received);
+    std::cout << "reading: " << response << "\n";
+    return response;
   }
 
   bool SocketConnection::sendMessage(const std::string& msg)
   {
     assert(ready());
-
+    std::cout << "sending: " << msg << "\n";
     size_t bytes_sent = send(socket_fd_, msg.c_str(), msg.length(), 0);
 
     if ( (bytes_sent == -1) || (bytes_sent != msg.length()) )

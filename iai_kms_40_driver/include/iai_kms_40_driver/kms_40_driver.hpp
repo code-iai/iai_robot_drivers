@@ -30,6 +30,7 @@
 
 #include <iai_kms_40_driver/socket_connection.hpp>
 #include <iai_kms_40_driver/wrench.hpp>
+#include <ros/ros.h>
 
 namespace iai_kms_40_driver
 {
@@ -52,7 +53,7 @@ namespace iai_kms_40_driver
       Wrench wrench_, wrench_buffer_;
 
       pthread_t thread_; 
-      pthread_mutex_t mutex_; 
+      pthread_mutex_t mutex_, read_chunk_mutex_; 
       bool exit_requested_, running_, paused_;
 
       // actual function run be our thread

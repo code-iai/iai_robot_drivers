@@ -154,9 +154,13 @@ namespace iai_kms_40_driver
   {
     while( !exit_requested_ )
     {
+      // requestStreamStop();
       if (!paused_){
+        pthread_mutex_lock(&read_chunk_mutex_);
         blockingReadWrench();
         copyWrenchIntoBuffer();
+        // ros::Duration(0.5).sleep();
+        pthread_mutex_unlock(&read_chunk_mutex_);
       }
     }
 
@@ -179,25 +183,39 @@ namespace iai_kms_40_driver
 
   bool KMS40Driver::kmsServiceRequest(const std::string& request, const std::string& response)
   {
-    paused_ = true;
+    pthread_mutex_lock(&read_chunk_mutex_);
     socket_conn_.sendMessage(request);
-    bool result = (socket_conn_.readChunk().compare(response) == 0);
+    std::string actual_response = socket_conn_.readChunk();
+    bool result = (actual_response.compare(response) == 0);
     if (result && request == "L1()\n")
       paused_ = false;
     if (!result)
-      std::cout << response << std::endl;
+      std::cout << "expected " << request << " got " << actual_response << std::endl;
+    pthread_mutex_unlock(&read_chunk_mutex_);
     return result;
   }
 
   bool KMS40Driver::publicKmsServiceRequest(const std::string& request, const std::string& response)
   {
-    bool result = kmsServiceRequest("L0()\n", "L0\n");
-    if (result){
-      socket_conn_.sendMessage(request);
-      result = (socket_conn_.readChunk().compare(response) == 0);
-      if (result)
-        return kmsServiceRequest("L1()\n", "L1\n");
+    paused_ = true;
+    pthread_mutex_lock(&read_chunk_mutex_);
+    std::string actual_response = "adsfadf";
+    socket_conn_.sendMessage("L0()\n");
+    while (actual_response.find("L0\n") == std::string::npos){
+      actual_response = socket_conn_.readChunk();
+      // std::cout << "asf\n";
     }
+    bool result = false;
+    socket_conn_.sendMessage(request);
+    result = (socket_conn_.readChunk().compare(response) == 0);
+    if (result){
+      socket_conn_.sendMessage("L1()\n");
+      result = (socket_conn_.readChunk().compare("L1\n") == 0);
+      pthread_mutex_unlock(&read_chunk_mutex_);
+      paused_ = false;
+      return result;
+    }
+    pthread_mutex_unlock(&read_chunk_mutex_);
     return false;
   }
 }

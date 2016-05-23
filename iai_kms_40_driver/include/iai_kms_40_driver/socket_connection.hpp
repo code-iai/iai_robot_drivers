@@ -53,6 +53,7 @@ namespace iai_kms_40_driver
       timeval read_timeout_;
 
       static const size_t buffer_size_ = 1024;
+      // static const size_t buffer_size_ = 64;
   };
 }
 #endif // IAI_KMS_40_DRIVER_SOCKET_CONNECTION_HPP_
