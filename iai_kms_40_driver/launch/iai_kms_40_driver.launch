@@ -6,5 +6,6 @@
     <param name="publish_rate" value="500" type="int"/>
     <param name="frame_id" value="kms40_frame_out" type="string"/>
     <param name="topic_name" value="/kms40/wrench" type="string"/>
+    <param name="service_name" value="/kms40/set_tare" type="string"/>
   </node>
 </launch>

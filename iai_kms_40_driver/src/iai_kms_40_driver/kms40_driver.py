@@ -8,25 +8,27 @@ from multiprocessing import Lock
 
 
 class KMS40Driver(object):
-    def __init__(self, ip, port, hz=50, frame_id="/kms40", tcp_timeout=2., topic_name="/ft"):
+    def __init__(self, ip, port, hz=50, frame_id="/kms40", tcp_timeout=2., topic_name="/ft", service_name="/tare"):
         self.frame_id = frame_id
         self.tcp_timeout = tcp_timeout
         self.tn = telnetlib.Telnet(ip, port)
         self.mutex = Lock()
         if not self.send("VL(1)\n", "VL=1\n"):
             return
+        if not self.send("FLT(1)\n", "FLT=1\n"):
+            return
         frame_divider = 500 / hz
         if not self.send("LDIV({})\n".format(frame_divider), "LDIV={}\n".format(frame_divider)):
             return
         self.ft_pub = rospy.Publisher(topic_name, WrenchStamped, queue_size=10)
-        self.tare_srv = rospy.Service("tare", SetTare, self.tare_cb)
+        self.tare_srv = rospy.Service(service_name, SetTare, self.tare_cb)
         rospy.sleep(.5)
         rospy.loginfo("kms driver is now running")
 
     def tare_cb(self, msg):
         with self.mutex:
             l0_received = self.send("L0()\n", "L0\n")
-            max_waiting_tries = 3
+            max_waiting_tries = 500
             while not l0_received:
                 max_waiting_tries -= 1
                 if max_waiting_tries == 0:
@@ -101,5 +103,6 @@ if __name__ == '__main__':
                       rospy.get_param("/kms40/publish_rate"),
                       rospy.get_param("/kms40/frame_id"),
                       rospy.get_param("/kms40/tcp_timeout"),
-                      rospy.get_param("/kms40/topic_name"))
+                      rospy.get_param("/kms40/topic_name"),
+                      rospy.get_param("/kms40/service_name"))
     kms.stream_measurements()
