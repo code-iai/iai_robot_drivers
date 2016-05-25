@@ -17,12 +17,8 @@
   <url type="repository">https://github.com/code-iai/iai_robot_drivers</url>
 
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>roscpp</build_depend>
   <build_depend>geometry_msgs</build_depend>
-  <build_depend>boost</build_depend>
   <build_depend>iai_kms_40_msgs</build_depend>
-
-  <run_depend>roscpp</run_depend>
   <run_depend>geometry_msgs</run_depend>
-  <run_depend>boost</run_depend>
+  <run_depend>iai_kms_40_msgs</run_depend>
 </package>

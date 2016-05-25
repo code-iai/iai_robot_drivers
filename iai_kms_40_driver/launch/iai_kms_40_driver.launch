@@ -1,10 +1,10 @@
 <launch>
-  <node pkg="iai_kms_40_driver" type="kms40_node" name="kms40" output="screen">
+  <node pkg="iai_kms_40_driver" type="kms40_driver.py" name="kms40" output="screen">
     <param name="ip" value="192.168.102.70" type="string"/>
-    <param name="port" value="1000" type="string"/>
+    <param name="port" value="1000" type="int"/>
     <param name="tcp_timeout" value="0.5" type="double"/>
-    <param name="publish_rate" value="250" type="int"/>
-    <!-- <param name="frame_divider" value="1" type="int"/> -->
-    <param name="frame_id" value="_kms40_frame_out" type="string"/>
+    <param name="publish_rate" value="500" type="int"/>
+    <param name="frame_id" value="kms40_frame_out" type="string"/>
+    <param name="topic_name" value="/kms40/wrench" type="string"/>
   </node>
 </launch>
