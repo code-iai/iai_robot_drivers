@@ -24,6 +24,8 @@
 #define OMNI_ETHERCAT_ECAT_IFACE_HPP
 
 #include <pthread.h>
+#include <memory>  //For the shared_ptr
+
 #include <ecrt.h>  //part of igh's ethercat master
 #include <omni_ethercat/omnilib.hpp>
 
@@ -183,12 +185,7 @@ public:
 
 	void ec_drives_vel_zero();
 
-	std::vector<EcatELMODrive*> drives_;  //Holds the addresses of all the etherCAT slaves
-	EcatELMODrive* drive_fr_;
-	EcatELMODrive* drive_fl_;
-	EcatELMODrive* drive_br_;
-	EcatELMODrive* drive_bl_;
-	EcatELMODrive* drive_torso_;
+	std::map<std::string, std::shared_ptr<EcatELMODrive>> drive_map;  //holds the name and pointer to each drive
 
 private:
 	//Creates the pdo_entry table
@@ -202,7 +199,7 @@ private:
 	int cyclic_counter;
 	uint64_t ecat_cycle_counter;
 
-	//FIXME: Need to add functionity for drives that need to home (like the torso one)
+	//FIXME: Need to add functionality for drives that need to home (like the torso one)
 	//void configure_torso_drive();
 
 	void ec_drives_poweroff();

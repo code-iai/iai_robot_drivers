@@ -327,6 +327,7 @@ void Omnidrive::main()
 
 		//This is a Vector holding 4 velocities, in this order of wheels: fl, fr, bl, br.
 		//The wheel axes are chosen such that if the base is moving forward as a whole, all of them have positive rotations
+		// imagine all wheels with the rotational axis pointing to the left.
 		omni_ethercat::OmniEncVel vels;
 		vels = omni_ethercat::omniIK(jac_params_, limited_twist_);
 
@@ -343,16 +344,19 @@ void Omnidrive::main()
 		}
 
 		
+		//Actually command the wheel velocities
+		ecat_admin.drive_map["fl"]->task_wdata_user_side.target_velocity = vels[0];
+		ecat_admin.drive_map["fr"]->task_wdata_user_side.target_velocity = -1 * vels[1];
+		ecat_admin.drive_map["bl"]->task_wdata_user_side.target_velocity = vels[2];
+		ecat_admin.drive_map["br"]->task_wdata_user_side.target_velocity = -1 * vels[3];
+		ecat_admin.drive_map["torso"]->task_wdata_user_side.target_velocity = 0;
 
-		ecat_admin.drive_fl_->task_wdata_user_side.target_velocity = vels[0];
-		ecat_admin.drive_fr_->task_wdata_user_side.target_velocity = -1 * vels[1];
-		ecat_admin.drive_bl_->task_wdata_user_side.target_velocity = vels[2];
-		ecat_admin.drive_br_->task_wdata_user_side.target_velocity = -1 * vels[3];
 
-		for (unsigned int i=0; i < ecat_admin.drives_.size(); ++i) {
-			ecat_admin.drives_[i]->task_wdata_user_side.profile_acceleration = 5000000;
+		for (auto & drive_el: ecat_admin.drive_map) {
+			auto & drive = drive_el.second;
+			drive->task_wdata_user_side.profile_acceleration = 5000000;
 
-			ecat_admin.drives_[i]->task_wdata_user_side.profile_deceleration = 5000001;
+			drive->task_wdata_user_side.profile_deceleration = 5000001;
 		}
 
 

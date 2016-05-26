@@ -124,18 +124,21 @@ int EcatAdmin::start_omni_realtime(){
 
 
 
-	for (unsigned int i = 0; i < num_drives_; i++) {
+	for (auto & drive_el: drive_map) {
+		auto & drive = drive_el.second;
+		auto & name = drive_el.first;
 		/* master, (slave alias, slave position), (VID, PID) */
-		if (!(drives_[i]->sc = ecrt_master_slave_config(ec_master, drives_[i]->alias_, drives_[i]->position_, elmo_vendor_id, elmo_gold_whistle_product_id))) {
-			std::cerr << "start_omni_realtime(): Could not get slave configuration for Drive at bus position = " << drives_[i]->position_ << std::endl;
+		if (!(drive->sc = ecrt_master_slave_config(ec_master, drive->alias_, drive->position_, elmo_vendor_id, elmo_gold_whistle_product_id))) {
+			std::cerr << "start_omni_realtime(): Could not get slave configuration for Drive at bus position = " << drive->position_ << std::endl;
 			goto out_release_master;
 		}
-		std::cout << "start_omni_realtime(): Configuring PDOs for motor at bus position = " << drives_[i]->position_ << std::endl;
+		std::cout << "start_omni_realtime(): Configuring PDOs for motor at bus position = " << drive->position_ << std::endl;
 		/* slave config, sync manager index, index of the PDO to assign */
-		if (ecrt_slave_config_pdos(drives_[i]->sc, EC_END, chosen_syncs)) {
-			std::cerr << "start_omni_realtime(): Could not configure PDOs for Drive at bus position = " << drives_[i]->position_ << std::endl;
+		if (ecrt_slave_config_pdos(drive->sc, EC_END, chosen_syncs)) {
+			std::cerr << "start_omni_realtime(): Could not configure PDOs for Drive at bus position = " << drive->position_ << std::endl;
 			goto out_release_master;
 		}
+
 	}
 
 	std::cout << "start_omni_realtime(): Registering PDO entries..." << std::endl;
@@ -159,8 +162,9 @@ int EcatAdmin::start_omni_realtime(){
 	domain1_pd = ecrt_domain_data(domain1);
 
 	// Tell this address to the objects holding the drive info, they'll need it for EC_READ_* and EC_WRITE_*
-	for (unsigned int i=0; i < num_drives_; ++i) {
-		drives_[i]->set_domain_pd(domain1_pd);
+	for (auto & drive_el: drive_map) {
+		auto & drive = drive_el.second;
+		drive->set_domain_pd(domain1_pd);
 	}
 
 	std::cout << "start_omni_realtime(): Starting the realtime thread" << std::endl;
@@ -230,9 +234,10 @@ void EcatAdmin::realtime_main()
 		//copy from/to buffers
 		if(pthread_mutex_trylock(&rt_data_mutex) == 0)
 		{
-			for (unsigned int i=0; i < num_drives_; ++i) {
-				drives_[i]->task_data_to_user_data();  //getting variables read from ECAT
-				drives_[i]->user_data_to_task_data();  //setting variables to be written to ECAT
+			for (auto & drive_el: drive_map) {
+				auto & drive = drive_el.second;
+				drive->task_data_to_process();     //getting variables read from ECAT
+				drive->user_data_to_task_data();  //setting variables to be written to ECAT
 			}
 			pthread_mutex_unlock(&rt_data_mutex);
 		}
@@ -283,22 +288,25 @@ void EcatAdmin::check_drive_state(){
 #define STATUSWORD_TARGET_REACHED_BIT 10
 #define STATUSWORD_INTERNAL_LIMIT_ACTIVE_BIT 11
 
-	for (unsigned int i=0; i < num_drives_; ++i) {
+	for (auto & drive_el: drive_map) {
+		auto & name = drive_el.first;
+		auto & drive = drive_el.second;
+
 		unsigned int controlword = 0x00;
-		unsigned int statusword = drives_[i]->task_rdata_user_side.statusword;
+		unsigned int statusword = drive->task_rdata_user_side.statusword;
 
 
 		//printf("StatusWord[%i] = 0x%04x = %d \n", i, statusword, statusword);
 		if (statusword & (1 << STATUSWORD_FAULT_BIT)) {
-			printf("\e[31;1mm%d Has fault! <----------------\e[0m\n", i);
+			printf("\e[31;1mm%s Has fault! <----------------\e[0m\n", name.c_str());
 		}
 
 		if (!(statusword & (1 << STATUSWORD_VOLTAGE_ENABLE_BIT))){
-			printf("\e[31;1mm%d Voltage not enabled! <----------------\e[0m\n", i);
+			printf("\e[31;1mm%s Voltage not enabled! <----------------\e[0m\n", name.c_str());
 		}
 
 		//if (!(statusword & (1 << STATUSWORD_SWITCH_ON_DISABLED_BIT))){
-		//	   printf("\e[31;1mm%d Switch_on_disabled_bit <----------------\e[0m\n", i);
+		//	   printf("\e[31;1mm%s Switch_on_disabled_bit <----------------\e[0m\n", name.c_str());
 		//}
 
 
@@ -308,20 +316,20 @@ void EcatAdmin::check_drive_state(){
 					if ((statusword & (1 << STATUSWORD_FAULT_BIT))) {
 						/* reset fault */
 						controlword = 	0x80;
-						printf("\e[31;1mm%d Reset fault <----------------\e[0m\n", i);
+						printf("\e[31;1mm%s Reset fault <----------------\e[0m\n", name.c_str());
 					} else {
 						/* shutdown */
 						controlword = 0x06;
-						printf("\e[31;1mm%d Shutdown <----------------\e[0m\n", i);
+						printf("\e[31;1mm%s Shutdown <----------------\e[0m\n", name.c_str());
 					}
 				} else {
 					/* switch on */
 					controlword = 0x07;
-					printf("\e[31;1mm%d Switch on <----------------\e[0m\n", i);
+					printf("\e[31;1mm%s Switch on <----------------\e[0m\n", name.c_str());
 				}
 			} else {
 				/* enable operation */
-				printf("\e[31;mm%d EnableOperation <----------------\e[0m\n", i);
+				printf("\e[31;mm%s EnableOperation <----------------\e[0m\n", name.c_str());
 				controlword = 0x0F;
 			}
 		} else {
@@ -329,11 +337,8 @@ void EcatAdmin::check_drive_state(){
 			controlword = 0x0f;
 		}
 
-		drives_[i]->task_wdata_user_side.controlword = controlword;
+		drive->task_wdata_user_side.controlword = controlword;
 		//std::cout << "controlword = 0x" << std::hex << controlword << std::dec << std::endl;
-
-
-
 
 	}
 
@@ -389,8 +394,10 @@ int EcatAdmin::ecat_writeSDO(int slave_pos, int index, int subindex, int value, 
 void EcatAdmin::ec_drives_speedcontrol(){
 	std::cout << "ec_drives_speedcontrol()" << std::endl;
 
-	for (unsigned int i=0; i < num_drives_; ++i) {
-		ecat_writeSDO(drives_[i]->position_, 0x6060, 0x00, 0x03, EC_INT8);
+
+	for (auto & drive_el: drive_map) {
+		auto & drive = drive_el.second;
+		ecat_writeSDO(drive->position_, 0x6060, 0x00, 0x03, EC_INT8);
 	}
 
 }
@@ -400,13 +407,9 @@ void EcatAdmin::ec_drives_poweroff(){
 	std::cout << "omnidrive_poweroff()" << std::endl;
 
 
-	//Using C++11
-	//for (auto &drive : drives_) {
-	//	ecat_writeSDO(drive->position_, 0x6040, 0x00, 0x00, EC_UINT16);
-	//}
-
-	for (unsigned int i=0; i < num_drives_; ++i) {
-		ecat_writeSDO(drives_[i]->position_, 0x6040, 0x00, 0x00, EC_UINT16);
+	for (auto & drive_el: drive_map) {
+		auto & drive = drive_el.second;
+		ecat_writeSDO(drive->position_, 0x6040, 0x00, 0x00, EC_UINT16);
 	}
 
 }
@@ -414,8 +417,9 @@ void EcatAdmin::ec_drives_poweroff(){
 void EcatAdmin::ec_drives_recover(){
 	std::cout << "omnidrive_recover()" << std::endl;
 
-	for (unsigned int i=0; i < num_drives_; ++i) {
-		ecat_writeSDO(drives_[i]->position_, 0x6040, 0x00, 0x80, EC_UINT16);
+	for (auto & drive_el: drive_map) {
+		auto & drive = drive_el.second;
+		ecat_writeSDO(drive->position_, 0x6040, 0x00, 0x80, EC_UINT16);
 	}
 }
 
@@ -425,21 +429,22 @@ void EcatAdmin::ec_drives_poweron()
 {
 	std::cout << "omnidrive_poweron()" << std::endl;
 
-	for (unsigned int i=0; i < num_drives_; ++i) {
-		ecat_writeSDO(drives_[i]->position_, 0x6040, 0x00, 0x06, EC_UINT16);
+	for (auto & drive_el: drive_map) {
+		auto & drive = drive_el.second;
+		ecat_writeSDO(drive->position_, 0x6040, 0x00, 0x06, EC_UINT16);
 	}
 
-	for (unsigned int i=0; i < num_drives_; ++i) {
-		ecat_writeSDO(drives_[i]->position_, 0x6040, 0x00, 0x07, EC_UINT16);
+	for (auto & drive_el: drive_map) {
+		auto & drive = drive_el.second;
+		ecat_writeSDO(drive->position_, 0x6040, 0x00, 0x07, EC_UINT16);
 	}
 
-	for (unsigned int i=0; i < num_drives_; ++i) {
-		ecat_writeSDO(drives_[i]->position_, 0x6040, 0x00, 0x0f, EC_UINT16);
+	for (auto & drive_el: drive_map) {
+		auto & drive = drive_el.second;
+		ecat_writeSDO(drive->position_, 0x6040, 0x00, 0x0f, EC_UINT16);
 	}
 
 }
-
-
 
 int EcatAdmin::ecat_init(){
 	std::cout << "ecat_init()" << std::endl;
@@ -532,8 +537,9 @@ void EcatAdmin::cyclic_ecat_task()
 	//Info about the data type and address found in MAN-CAN402IG.pdf from Elmo
 
 
-	for (i = 0; i < num_drives_; i++) {
-		drives_[i]->process_to_task_data();  //This calls EC_READ on all the process variables
+	for (auto & drive_el: drive_map) {
+		auto & drive = drive_el.second;
+		drive->process_to_task_data();  //This calls EC_READ on all the process variables
 	}
 
 	if (cyclic_counter > 0) {
@@ -586,9 +592,10 @@ void EcatAdmin::cyclic_ecat_task()
 	//	    }
 
 
-	for (i = 0; i < num_drives_; ++i) {
-		drives_[i]->task_data_to_process(); //This calls EC_WRITE on all the variables
-		//std::cout << "[" << i << "] " << "controlword = 0x" << std::hex << drives_[i]->task_wdata_process_side.controlword << std::dec << std::endl;
+	for (auto & drive_el: drive_map) {
+		auto & drive = drive_el.second;
+		drive->task_data_to_process(); //This calls EC_WRITE on all the variables
+		//std::cout << "[" << i << "] " << "controlword = 0x" << std::hex << drive->task_wdata_process_side.controlword << std::dec << std::endl;
 	}
 
 	/* Send process data. */
@@ -628,21 +635,22 @@ void EcatAdmin::check_slave_config_states(void)
 	ec_slave_config_state_t s;
 
 	//Report if something has changed from the saved slave_config_state
-	for (i = 0; i < num_drives_; i++) {
-		ecrt_slave_config_state(drives_[i]->sc, &s);
-		if (s.al_state != drives_[i]->slave_config_state_old.al_state)
+	for (auto & drive_el: drive_map) {
+		auto & drive = drive_el.second;
+		ecrt_slave_config_state(drive->sc, &s);
+		if (s.al_state != drive->slave_config_state_old.al_state)
 			printf("m%d: State 0x%02X.\n", i, s.al_state);
-		if (s.online != drives_[i]->slave_config_state_old.online)
+		if (s.online != drive->slave_config_state_old.online)
 			printf("m%d: %s.\n", i,
 					s.online ? "online" : "offline");
-		if (s.operational != drives_[i]->slave_config_state_old.operational)
+		if (s.operational != drive->slave_config_state_old.operational)
 			printf("m%d: %soperational.\n", i,
 					s.operational ? "" : "Not ");
 
 		//Save data to the drive object
 		//TODO: Use this to check on the state of the slaves (that they are all OP)
-		drives_[i]->slave_config_state = s;
-		drives_[i]->slave_config_state_old = s;
+		drive->slave_config_state = s;
+		drive->slave_config_state_old = s;
 
 	}
 	
@@ -654,31 +662,20 @@ void EcatAdmin::prepare_objects_for_slaves_on_boxy(){
 
 	//Here we instantiate one object EcatELMODrive per drive
 	//These have memory addresses that get passed to the ethercat master, so they must stay valid
-	//So we keep them alive with static, and pass around their addresses
-	//std::shared_ptr<EcatELMODrive> slave_fr (new EcatELMODrive((0, 2, elmo_vendor_id, elmo_gold_whistle_product_id );
-	static EcatELMODrive slave_fr(0, 2, elmo_vendor_id, elmo_gold_whistle_product_id );
-	static EcatELMODrive slave_fl(0, 3, elmo_vendor_id, elmo_gold_whistle_product_id );
-	static EcatELMODrive slave_br(0, 0, elmo_vendor_id, elmo_gold_whistle_product_id );
-	static EcatELMODrive slave_bl(0, 1, elmo_vendor_id, elmo_gold_whistle_product_id );
-	static EcatELMODrive slave_torso(0, 4, elmo_vendor_id, elmo_gold_whistle_product_id );
+	//So we create them into shared_pointers
 
+	std::shared_ptr<EcatELMODrive> slave_fr = std::make_shared<EcatELMODrive>(0, 2, elmo_vendor_id, elmo_gold_whistle_product_id );
+	std::shared_ptr<EcatELMODrive> slave_fl = std::make_shared<EcatELMODrive>(0, 3, elmo_vendor_id, elmo_gold_whistle_product_id );
+	std::shared_ptr<EcatELMODrive> slave_br = std::make_shared<EcatELMODrive>(0, 0, elmo_vendor_id, elmo_gold_whistle_product_id );
+	std::shared_ptr<EcatELMODrive> slave_bl = std::make_shared<EcatELMODrive>(0, 1, elmo_vendor_id, elmo_gold_whistle_product_id );
+	std::shared_ptr<EcatELMODrive> slave_torso = std::make_shared<EcatELMODrive>(0, 4, elmo_vendor_id, elmo_gold_whistle_product_id );
 
-	//drives_ holds all the slaves for easy global configuration
-	drives_.push_back(&slave_fl);
-	drives_.push_back(&slave_fr);
-	drives_.push_back(&slave_bl);
-	drives_.push_back(&slave_br);
-	drives_.push_back(&slave_torso);
-
-	num_drives_ = drives_.size();
-
-	//These point directly to specific drives, to easily make sense of where the wheels are
-	drive_fl_ = &slave_fl;
-	drive_fr_ = &slave_fr;
-	drive_bl_ = &slave_bl;
-	drive_br_ = &slave_br;
-	drive_torso_ = &slave_torso;
-
+	//drive_map holds all the slaves for easy global configuration
+	drive_map["fl"] = slave_fl;
+	drive_map["fr"] = slave_fr;
+	drive_map["bl"] = slave_bl;
+	drive_map["br"] = slave_br;
+	drive_map["torso"] = slave_torso;
 
 }
 
@@ -695,12 +692,13 @@ std::vector<ec_pdo_entry_reg_t> EcatAdmin::get_pdo_entry_regs_terminated() {
 std::vector<ec_pdo_entry_reg_t> EcatAdmin::get_pdo_entry_regs() {
 	std::vector<ec_pdo_entry_reg_t> regs;
 
-	for (unsigned int i=0; i < drives_.size(); ++i) {
+	for (auto const & drive: drive_map) {
 		std::vector<ec_pdo_entry_reg_t> slave_entries;
-		slave_entries = drives_[i]->get_pdo_entry_regs();
+		slave_entries = drive.second->get_pdo_entry_regs();
 
-		for (unsigned int j=0; j < slave_entries.size(); ++j) {
-			regs.push_back(slave_entries[j]);
+
+		for (auto entry: slave_entries) {
+			regs.push_back(entry);
 		}
 
 	}
@@ -712,15 +710,16 @@ std::vector<ec_pdo_entry_reg_t> EcatAdmin::get_pdo_entry_regs() {
 void EcatAdmin::print_pdo_entries() {
 	std::vector<ec_pdo_entry_reg_t> entries = get_pdo_entry_regs();
 
-	for (unsigned int i=0; i < entries.size(); ++i) {
-		print_pdo_entry_reg(entries[i]);
+	for (auto entry: entries) {
+		print_pdo_entry_reg(entry);
 	}
 }
 
 void EcatAdmin::ec_drives_vel_zero() {
 	std::cout << "ec_drives_vel_zero()" << std::endl;
-	for (unsigned int i=0; i < num_drives_; ++i) {
-		drives_[i]->task_wdata_user_side.target_velocity = 0;
+
+	for (auto & drive: drive_map) {
+		drive.second->task_wdata_user_side.target_velocity = 0;
 	}
 }
 
@@ -745,10 +744,8 @@ void EcatELMODrive::add_pdo_entry(uint16_t index, uint8_t subindex, unsigned int
 std::vector<ec_pdo_entry_reg_t> EcatELMODrive::get_pdo_entry_regs() {
 	std::vector<ec_pdo_entry_reg_t> vec;
 
-	for (unsigned int i=0; i < pdos_.size(); ++i) {
+	for (auto & p: pdos_) {
 		ec_pdo_entry_reg_t entry;
-
-		EcatPdoEntry p = pdos_[i];
 
 		//Parts that are the same always for this slave
 		entry.alias = alias_;
@@ -778,9 +775,8 @@ void EcatELMODrive::print_pdo_entry_regs() {
 
 	std::vector<ec_pdo_entry_reg_t> data = get_pdo_entry_regs();
 
-	for (unsigned int i=0; i < data.size(); ++i) {
-		print_pdo_entry_reg(data[i]);
-
+	for (auto & d: data) {
+		print_pdo_entry_reg(d);
 	}
 
 }

@@ -6,6 +6,8 @@ project(omni_ethercat)
 #Kinetic Kame will be on C++11 per default: http://www.ros.org/reps/rep-0003.html
 #set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
+add_definitions(-std=c++11)
+
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
