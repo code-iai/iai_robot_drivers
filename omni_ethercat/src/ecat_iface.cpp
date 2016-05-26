@@ -273,6 +273,8 @@ void EcatAdmin::realtime_main()
 void EcatAdmin::check_drive_state(){
 	//This should be called around once a second to bring the drives up if something happens, like E-Stop
 
+	//TODO: Check if the E-Stop is pressed, then skip trying to get the drives up until that is solved
+
 	//After the EtherCAT communication is setup and PDOs are running (in OP mode), it is still necessary to enable the motor controller
 	// which involves reseting errors, enabling voltage, switching on, etc
 #define STATUSWORD_READY_TO_SWITCH_ON_BIT 0
@@ -664,18 +666,18 @@ void EcatAdmin::prepare_objects_for_slaves_on_boxy(){
 	//These have memory addresses that get passed to the ethercat master, so they must stay valid
 	//So we create them into shared_pointers
 
-	std::shared_ptr<EcatELMODrive> slave_fr = std::make_shared<EcatELMODrive>(0, 2, elmo_vendor_id, elmo_gold_whistle_product_id );
-	std::shared_ptr<EcatELMODrive> slave_fl = std::make_shared<EcatELMODrive>(0, 3, elmo_vendor_id, elmo_gold_whistle_product_id );
-	std::shared_ptr<EcatELMODrive> slave_br = std::make_shared<EcatELMODrive>(0, 0, elmo_vendor_id, elmo_gold_whistle_product_id );
-	std::shared_ptr<EcatELMODrive> slave_bl = std::make_shared<EcatELMODrive>(0, 1, elmo_vendor_id, elmo_gold_whistle_product_id );
-	std::shared_ptr<EcatELMODrive> slave_torso = std::make_shared<EcatELMODrive>(0, 4, elmo_vendor_id, elmo_gold_whistle_product_id );
+	std::shared_ptr<EcatELMODrive> slave_fr = std::make_shared<EcatELMODrive>(std::string("fr"), 0, 2, elmo_vendor_id, elmo_gold_whistle_product_id );
+	std::shared_ptr<EcatELMODrive> slave_fl = std::make_shared<EcatELMODrive>(std::string("fl"), 0, 3, elmo_vendor_id, elmo_gold_whistle_product_id );
+	std::shared_ptr<EcatELMODrive> slave_br = std::make_shared<EcatELMODrive>(std::string("br"), 0, 0, elmo_vendor_id, elmo_gold_whistle_product_id );
+	std::shared_ptr<EcatELMODrive> slave_bl = std::make_shared<EcatELMODrive>(std::string("bl"), 0, 1, elmo_vendor_id, elmo_gold_whistle_product_id );
+	std::shared_ptr<EcatELMODrive> slave_torso = std::make_shared<EcatELMODrive>(std::string("torso"), 0, 4, elmo_vendor_id, elmo_gold_whistle_product_id );
 
 	//drive_map holds all the slaves for easy global configuration
-	drive_map["fl"] = slave_fl;
-	drive_map["fr"] = slave_fr;
-	drive_map["bl"] = slave_bl;
-	drive_map["br"] = slave_br;
-	drive_map["torso"] = slave_torso;
+	drive_map[slave_fl->name_] = slave_fl;
+	drive_map[slave_fr->name_] = slave_fr;
+	drive_map[slave_bl->name_] = slave_bl;
+	drive_map[slave_br->name_] = slave_br;
+	drive_map[slave_torso->name_] = slave_torso;
 
 }
 
@@ -724,11 +726,15 @@ void EcatAdmin::ec_drives_vel_zero() {
 }
 
 
-EcatELMODrive::EcatELMODrive(uint16_t alias, uint16_t position, uint32_t vendor_id, uint32_t product_code): alias_(alias), position_(position), vendor_id_(vendor_id), product_code_(product_code) {
+EcatELMODrive::EcatELMODrive(std::string name, uint16_t alias, uint16_t position, uint32_t vendor_id, uint32_t product_code): name_(name), alias_(alias), position_(position), vendor_id_(vendor_id), product_code_(product_code) {
 	//std::cout << "EcatSlave constructor" << std::endl;
 
 	setup_variables();
 
+}
+
+EcatELMODrive::~EcatELMODrive() {
+	std::cout << "~EcatELMODrive. index=" << position_  << std::endl;
 }
 
 void EcatELMODrive::add_pdo_entry(uint16_t index, uint8_t subindex, unsigned int *offset, unsigned int *bit_position){

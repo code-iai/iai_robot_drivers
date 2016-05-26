@@ -122,7 +122,9 @@ public:
 //We will use one instance of EcatELMODrive per motor driver slave on the bus
 class EcatELMODrive {
 public:
-	EcatELMODrive(uint16_t alias, uint16_t position, uint32_t vendor_id, uint32_t product_code);
+	EcatELMODrive(std::string name, uint16_t alias, uint16_t position, uint32_t vendor_id, uint32_t product_code);
+	~EcatELMODrive();
+
 	void setup_variables();
 
 	//TODO: Cleanup this interface, an move entries to be private
@@ -132,6 +134,7 @@ public:
 	uint16_t position_;
 	uint32_t vendor_id_;
 	uint32_t product_code_;
+	std::string name_;
 
 	ec_slave_config_t *sc;
 	ec_slave_config_state_t slave_config_state;
