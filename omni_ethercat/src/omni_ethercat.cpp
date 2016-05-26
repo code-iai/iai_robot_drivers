@@ -21,7 +21,7 @@
 #include <math.h>
 
 #include <ros/ros.h>
-#include <geometry_msgs/Twist.h>
+#include <geometry_msgs/TwistStamped.h>
 #include <soft_runstop/Handler.h>
 #include <tf/transform_broadcaster.h>
 #include <diagnostic_updater/diagnostic_updater.h>
@@ -64,7 +64,7 @@ private:
   std::string frame_id_;
   std::string child_frame_id_;
   std::string power_name_;
-  void cmdArrived(const geometry_msgs::Twist::ConstPtr& msg);
+  void cmdArrived(const geometry_msgs::TwistStamped::ConstPtr& msg);
   void torsoCmdArrived(const std_msgs::Float64::ConstPtr& msg); //torso
   void stateUpdate(diagnostic_updater::DiagnosticStatusWrapper &s);
   void powerCommand(const iai_control_msgs::PowerState::ConstPtr& msg);
@@ -96,14 +96,14 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(D
   watchdog_time_ = ros::Time::now();
 }
 
-void Omnidrive::cmdArrived(const geometry_msgs::Twist::ConstPtr& msg)
+void Omnidrive::cmdArrived(const geometry_msgs::TwistStamped::ConstPtr& msg)
 {
   // FIXME: use TwistStamped instead of Twist and check that people command in the right frame
   // NOTE: No need for synchronization since this is called inside spinOnce() in the main loop
 
-  drive_[0] = msg->linear.x;
-  drive_[1] = msg->linear.y;
-  drive_[2] = msg->angular.z;
+  drive_[0] = msg->twist.linear.x;
+  drive_[1] = msg->twist.linear.y;
+  drive_[2] = msg->twist.angular.z;
 
 
   //FIXME:  FUGLY, this needs to be fixed in omnilib.c (fix the jacobian)
