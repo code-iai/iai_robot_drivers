@@ -84,7 +84,7 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(D
 
 	//initialize the twists to all zeroes
 	des_twist_ = omni_ethercat::Twist2d(0,0,0);
-	limited_twist_ = omni_ethercat::Twist2d(0,0,0);
+	limited_twist_ = omni_ethercat::Twist2d(0.5,0,0);
 	max_twist_ = omni_ethercat::Twist2d(1.0, 1.0, 1.0); //FIXME: read from param
 	double max_wheel_tick_speed = 833333.0; // ticks/s : 5000 rpm/ 60s * 10000 ticks/rev
 	double lx = 0.39225;
@@ -109,6 +109,9 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(D
 
 void Omnidrive::cmdArrived(const geometry_msgs::TwistStamped::ConstPtr& msg)
 {
+
+	//std::cout << "cmdArrived()" << std::endl;
+
 	// FIXME: use TwistStamped instead of Twist and check that people command in the right frame
 	// NOTE: No need for synchronization since this is called inside spinOnce() in the main loop
 
@@ -125,6 +128,8 @@ void Omnidrive::cmdArrived(const geometry_msgs::TwistStamped::ConstPtr& msg)
 		if (des_twist_ != limited_twist_) {
 			std::cout << "The desired twist will be limited from: " << des_twist_ << " to: " << limited_twist_ << std::endl;
 		}
+	
+		//std::cout << "limited_twist_ = " << limited_twist_ << std::endl;
 
 		watchdog_time_ = ros::Time::now();
 	} else {
@@ -320,6 +325,37 @@ void Omnidrive::main()
 		}
 
 
+		//This is a Vector holding 4 velocities, in this order of wheels: fl, fr, bl, br.
+		//The wheel axes are chosen such that if the base is moving forward as a whole, all of them have positive rotations
+		omni_ethercat::OmniEncVel vels;
+		vels = omni_ethercat::omniIK(jac_params_, limited_twist_);
+
+		static omni_ethercat::Twist2d old_twist;
+		static omni_ethercat::OmniEncVel old_vels;
+
+		if (old_twist != limited_twist_) {
+			old_twist = limited_twist_;
+			std::cout << "Commanded twist: " << limited_twist_ << std::endl;
+		}
+		if (old_vels != vels) {
+			old_vels = vels;
+			std::cout << "Commanded wheel velocities: " << vels << std::endl;
+		}
+
+		
+
+		ecat_admin.drive_fl_->task_wdata_user_side.target_velocity = vels[0];
+		ecat_admin.drive_fr_->task_wdata_user_side.target_velocity = -1 * vels[1];
+		ecat_admin.drive_bl_->task_wdata_user_side.target_velocity = vels[2];
+		ecat_admin.drive_br_->task_wdata_user_side.target_velocity = -1 * vels[3];
+
+		for (unsigned int i=0; i < ecat_admin.drives_.size(); ++i) {
+			ecat_admin.drives_[i]->task_wdata_user_side.profile_acceleration = 5000000;
+
+			ecat_admin.drives_[i]->task_wdata_user_side.profile_deceleration = 5000001;
+		}
+
+
 		//Evil acceleration limitation
 		// this runs in a slow loop
 		//FIXME: Move to the high-speed loop for smoothness -> Maybe not needed, this loop is 250Hz.
@@ -389,6 +425,7 @@ void Omnidrive::main()
 
 	}
 
+	ecat_admin.ec_drives_vel_zero();
 	ecat_admin.shutdown();
 
 }

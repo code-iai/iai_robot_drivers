@@ -288,7 +288,7 @@ void EcatAdmin::check_drive_state(){
 		unsigned int statusword = drives_[i]->task_rdata_user_side.statusword;
 
 
-		printf("StatusWord[%i] = 0x%04x = %d \n", i, statusword, statusword);
+		//printf("StatusWord[%i] = 0x%04x = %d \n", i, statusword, statusword);
 		if (statusword & (1 << STATUSWORD_FAULT_BIT)) {
 			printf("\e[31;1mm%d Has fault! <----------------\e[0m\n", i);
 		}
@@ -330,7 +330,7 @@ void EcatAdmin::check_drive_state(){
 		}
 
 		drives_[i]->task_wdata_user_side.controlword = controlword;
-		std::cout << "controlword = 0x" << std::hex << controlword << std::dec << std::endl;
+		//std::cout << "controlword = 0x" << std::hex << controlword << std::dec << std::endl;
 
 
 
@@ -418,6 +418,8 @@ void EcatAdmin::ec_drives_recover(){
 		ecat_writeSDO(drives_[i]->position_, 0x6040, 0x00, 0x80, EC_UINT16);
 	}
 }
+
+
 
 void EcatAdmin::ec_drives_poweron()
 {
@@ -640,8 +642,10 @@ void EcatAdmin::check_slave_config_states(void)
 		//Save data to the drive object
 		//TODO: Use this to check on the state of the slaves (that they are all OP)
 		drives_[i]->slave_config_state = s;
+		drives_[i]->slave_config_state_old = s;
 
 	}
+	
 }
 
 
@@ -651,27 +655,28 @@ void EcatAdmin::prepare_objects_for_slaves_on_boxy(){
 	//Here we instantiate one object EcatELMODrive per drive
 	//These have memory addresses that get passed to the ethercat master, so they must stay valid
 	//So we keep them alive with static, and pass around their addresses
-	static EcatELMODrive slave_fr(0, 0, elmo_vendor_id, elmo_gold_whistle_product_id );
-	static EcatELMODrive slave_fl(0, 1, elmo_vendor_id, elmo_gold_whistle_product_id );
-	static EcatELMODrive slave_br(0, 2, elmo_vendor_id, elmo_gold_whistle_product_id );
-	static EcatELMODrive slave_bl(0, 3, elmo_vendor_id, elmo_gold_whistle_product_id );
+	//std::shared_ptr<EcatELMODrive> slave_fr (new EcatELMODrive((0, 2, elmo_vendor_id, elmo_gold_whistle_product_id );
+	static EcatELMODrive slave_fr(0, 2, elmo_vendor_id, elmo_gold_whistle_product_id );
+	static EcatELMODrive slave_fl(0, 3, elmo_vendor_id, elmo_gold_whistle_product_id );
+	static EcatELMODrive slave_br(0, 0, elmo_vendor_id, elmo_gold_whistle_product_id );
+	static EcatELMODrive slave_bl(0, 1, elmo_vendor_id, elmo_gold_whistle_product_id );
 	static EcatELMODrive slave_torso(0, 4, elmo_vendor_id, elmo_gold_whistle_product_id );
 
 
 	//drives_ holds all the slaves for easy global configuration
-	drives_.push_back(&slave_fr);
 	drives_.push_back(&slave_fl);
-	drives_.push_back(&slave_br);
+	drives_.push_back(&slave_fr);
 	drives_.push_back(&slave_bl);
+	drives_.push_back(&slave_br);
 	drives_.push_back(&slave_torso);
 
 	num_drives_ = drives_.size();
 
 	//These point directly to specific drives, to easily make sense of where the wheels are
-	drive_fr_ = &slave_fr;
 	drive_fl_ = &slave_fl;
-	drive_br_ = &slave_br;
+	drive_fr_ = &slave_fr;
 	drive_bl_ = &slave_bl;
+	drive_br_ = &slave_br;
 	drive_torso_ = &slave_torso;
 
 
@@ -709,6 +714,13 @@ void EcatAdmin::print_pdo_entries() {
 
 	for (unsigned int i=0; i < entries.size(); ++i) {
 		print_pdo_entry_reg(entries[i]);
+	}
+}
+
+void EcatAdmin::ec_drives_vel_zero() {
+	std::cout << "ec_drives_vel_zero()" << std::endl;
+	for (unsigned int i=0; i < num_drives_; ++i) {
+		drives_[i]->task_wdata_user_side.target_velocity = 0;
 	}
 }
 

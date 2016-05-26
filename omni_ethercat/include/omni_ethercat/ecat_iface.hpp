@@ -28,9 +28,6 @@
 #include <omni_ethercat/omnilib.hpp>
 
 
-
-
-
 //This order must match *types below
 #define EC_INT8   0
 #define EC_UINT8  1
@@ -139,18 +136,6 @@ public:
 	ec_slave_config_state_t slave_config_state_old; //rename to old_state
 
 
-	DriveProcessDataOffsets pdata_offsets;   //memory the ECAT master writes to directly
-
-
-	DriveTaskReadVars task_rdata_process_side;
-	DriveTaskReadVars task_rdata_user_side;
-	DriveTaskWriteVars task_wdata_process_side;
-	DriveTaskWriteVars task_wdata_user_side;
-
-
-	//add_pdo_entry stores a desired pdo mapping into pdos_
-	void add_pdo_entry(uint16_t index, uint8_t subindex, unsigned int *offset, unsigned int *bit_position);
-
 	std::vector<ec_pdo_entry_reg_t> get_pdo_entry_regs();
 	void print_pdo_entry_regs();
 
@@ -165,7 +150,17 @@ public:
 	void set_domain_pd(uint8_t *domain_pd);
 
 
+	DriveTaskReadVars task_rdata_user_side;
+	DriveTaskWriteVars task_wdata_user_side;
+
 private:
+	DriveTaskReadVars task_rdata_process_side;
+	DriveTaskWriteVars task_wdata_process_side;
+
+	DriveProcessDataOffsets pdata_offsets;   //memory the ECAT master writes to directly
+
+	//add_pdo_entry stores a desired pdo mapping into pdos_
+	void add_pdo_entry(uint16_t index, uint8_t subindex, unsigned int *offset, unsigned int *bit_position);
 
 	//pdos_ holds a list of the partial pdo entry (to be completed with the variables that identify the slave)
 	std::vector<EcatPdoEntry> pdos_;
@@ -186,8 +181,14 @@ public:
 
 	void print_pdo_entries();
 
+	void ec_drives_vel_zero();
 
-
+	std::vector<EcatELMODrive*> drives_;  //Holds the addresses of all the etherCAT slaves
+	EcatELMODrive* drive_fr_;
+	EcatELMODrive* drive_fl_;
+	EcatELMODrive* drive_br_;
+	EcatELMODrive* drive_bl_;
+	EcatELMODrive* drive_torso_;
 
 private:
 	//Creates the pdo_entry table
@@ -209,14 +210,10 @@ private:
 	void ec_drives_recover();
 	void ec_drives_poweron();
 
-	std::vector<EcatELMODrive*> drives_;  //Holds the addresses of all the etherCAT slaves
+
+
 	unsigned int num_drives_;
 
-	EcatELMODrive* drive_fr_;
-	EcatELMODrive* drive_fl_;
-	EcatELMODrive* drive_br_;
-	EcatELMODrive* drive_bl_;
-	EcatELMODrive* drive_torso_;
 
 	bool finished_ecat_init_;
 
