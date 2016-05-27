@@ -3,7 +3,7 @@
     <param name="ip" value="192.168.102.70" type="string"/>
     <param name="port" value="1000" type="int"/>
     <param name="tcp_timeout" value="0.5" type="double"/>
-    <param name="publish_rate" value="500" type="int"/>
+    <param name="publish_rate" value="100" type="int"/>
     <param name="frame_id" value="kms40_frame_out" type="string"/>
     <param name="topic_name" value="/kms40/wrench" type="string"/>
     <param name="service_name" value="/kms40/set_tare" type="string"/>

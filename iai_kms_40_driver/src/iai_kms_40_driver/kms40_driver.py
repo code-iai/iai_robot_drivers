@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 import telnetlib
+import timeit
+
 import rospy
 import sys
 from geometry_msgs.msg._WrenchStamped import WrenchStamped
@@ -8,8 +10,9 @@ from multiprocessing import Lock
 
 
 class KMS40Driver(object):
-    def __init__(self, ip, port=1000, hz=50, frame_id="/kms40", tcp_timeout=2., topic_name="/ft", service_name="/tare"):
-        self.frame_id = frame_id
+    w = WrenchStamped()
+    def __init__(self, ip="192.168.102.70", port=1000, hz=50, frame_id="/kms40", tcp_timeout=2., topic_name="/ft", service_name="/tare"):
+        self.w.header.frame_id = frame_id
         self.tcp_timeout = tcp_timeout
         self.tn = telnetlib.Telnet(ip, port)
         self.mutex = Lock()
@@ -75,8 +78,6 @@ class KMS40Driver(object):
         msg = self.tn.read_until("\n", timeout=self.tcp_timeout)
         if msg == "":
             rospy.logerr("timeout while receiving, you probably need to reboot the sensor.")
-        elif msg.startswith("ERR"):
-            rospy.logerr("received error {}".format(msg))
         return msg
 
     def ft_to_msg(self, ft):
@@ -85,23 +86,18 @@ class KMS40Driver(object):
         :param ft: string
         :return: WrenchStamped
         """
-        # ft = F={f1,f2,f3,t1,t2,t3},stamp
-        start, end = ft.split("=")
-        # start=F
-        # end={f1,f2,f3,t1,t2,t3},stamp
-        if start == "F":
-            l = end.split("}")[0][1:].split(",")
-            # l=["f1","f2","f3","t1","t2","t3"]
-            w = WrenchStamped()
-            w.header.stamp = rospy.get_rostime()
-            w.header.frame_id = self.frame_id
-            w.wrench.force.x = float(l[0])
-            w.wrench.force.y = float(l[1])
-            w.wrench.force.z = float(l[2])
-            w.wrench.torque.x = float(l[3])
-            w.wrench.torque.y = float(l[4])
-            w.wrench.torque.z = float(l[5])
-            return w
+        if "F" == ft[0]:
+            l = ft[3:].split(",")[:-1]
+            self.w.header.stamp = rospy.get_rostime()
+            self.w.wrench.force.x = float(l[0])
+            self.w.wrench.force.y = float(l[1])
+            self.w.wrench.force.z = float(l[2])
+            self.w.wrench.torque.x = float(l[3])
+            self.w.wrench.torque.y = float(l[4])
+            self.w.wrench.torque.z = float(l[5][:-1])
+            return self.w
+        elif ft[0] == "E":
+            rospy.logerr("received error {}".format(msg))
         return None
 
     def stream_measurements(self):
@@ -109,26 +105,35 @@ class KMS40Driver(object):
         Start the wrench stream and publishes the wrenches on a topic.
         """
         self.send("L1()\n", "L1\n")
-        try:
-            while not rospy.is_shutdown():
-                with self.mutex:
-                    msg = self.ft_to_msg(self.recv_chunk())
-                    if msg is not None:
-                        self.ft_pub.publish(msg)
-        except:
-            print(sys.exc_info()[0])
-        finally:
-            rospy.loginfo("shutdown kms40 driver")
-            self.send("L0()\n", "L0")
+        # rate = rospy.Rate(500)
+        while not rospy.is_shutdown():
+            with self.mutex:
+                # msg = self.recv_chunk()
+                # msg =
+                # if msg is not None:
+                self.ft_pub.publish(self.ft_to_msg(self.recv_chunk()))
+                # else:
+                #     print("safadsf")
+            # rate.sleep()
+
+    def stop(self):
+        rospy.loginfo("shutdown kms40 driver")
+        self.send("L0()\n", "L0")
 
 
 if __name__ == '__main__':
     rospy.init_node('kms40_driver', anonymous=True)
-    kms = KMS40Driver(rospy.get_param("/kms40/ip"),
-                      rospy.get_param("/kms40/port"),
-                      rospy.get_param("/kms40/publish_rate"),
-                      rospy.get_param("/kms40/frame_id"),
-                      rospy.get_param("/kms40/tcp_timeout"),
-                      rospy.get_param("/kms40/topic_name"),
-                      rospy.get_param("/kms40/service_name"))
-    kms.stream_measurements()
+    try:
+        kms = KMS40Driver(rospy.get_param("/kms40/ip"),
+                          rospy.get_param("/kms40/port"),
+                          rospy.get_param("/kms40/publish_rate"),
+                          rospy.get_param("/kms40/frame_id"),
+                          rospy.get_param("/kms40/tcp_timeout"),
+                          rospy.get_param("/kms40/topic_name"),
+                          rospy.get_param("/kms40/service_name"))
+        # kms = KMS40Driver()
+        # number = 100000
+        # print(timeit.timeit(lambda : kms.ft_to_msg("F={-1.545,0.642,15.048,-0.051,-0.072,0.037},7181019"), number=number)/number)
+        kms.stream_measurements()
+    finally:
+        kms.stop()
