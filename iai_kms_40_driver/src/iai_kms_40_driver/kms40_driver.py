@@ -88,6 +88,7 @@ class KMS40Driver(object):
         """
         if "F" == ft[0]:
             l = ft[3:].split(",")[:-1]
+            # creates a list that looks like this: ["1.23", "2.34", .., "7.89}"]
             w = WrenchStamped()
             w.header.frame_id = self.frame_id
             w.header.stamp = rospy.get_rostime()
@@ -95,7 +96,7 @@ class KMS40Driver(object):
             w.wrench.force.y = float(l[1])
             w.wrench.force.z = float(l[2])
             w.wrench.torque.x = float(l[3])
-            w.wrench.torque.y = float(l[4])
+            w.wrench.torque.y = float(l[4])            
             w.wrench.torque.z = float(l[5][:-1])
             return w
         elif ft[0] == "E":
@@ -112,6 +113,9 @@ class KMS40Driver(object):
                 self.ft_pub.publish(self.ft_to_msg(self.recv_chunk()))
 
     def stop(self):
+        """
+        Stops the transmission
+        """
         rospy.loginfo("shutdown kms40 driver")
         self.send("L0()\n", "L0")
 
@@ -127,10 +131,8 @@ if __name__ == '__main__':
                           rospy.get_param("/kms40/tcp_timeout"),
                           rospy.get_param("/kms40/topic_name"),
                           rospy.get_param("/kms40/service_name"))
-        # kms = KMS40Driver()
-        # number = 100000
-        # print(timeit.timeit(lambda : kms.ft_to_msg("F={-1.545,0.642,15.048,-0.051,-0.072,0.037},7181019"), number=number)/number)
         kms.stream_measurements()
     finally:
+        #this hopefully always stops the data transmission, otherwise it is likely, that the sensor has to be rebooted
         if kms is not None:
             kms.stop()
