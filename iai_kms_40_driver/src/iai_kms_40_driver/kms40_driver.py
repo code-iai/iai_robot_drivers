@@ -17,15 +17,15 @@ class KMS40Driver(object):
         self.tn = telnetlib.Telnet(ip, port)
         self.mutex = Lock()
         # set verbose level to 1 to see the error msgs
-        if not self.send("VL(1)\n", "VL=1\n"):
+        if not self.send_and_wait("VL(1)\n", "VL=1\n"):
             raise Exception("Unable to set verbose level.")
         # 5hz filter
-        if not self.send("FLT(1)\n", "FLT=1\n"):
+        if not self.send_and_wait("FLT(1)\n", "FLT=1\n"):
             raise Exception("Unable to set filter to 5hz.")
         if hz > 500:
             raise Exception("hz cannot be higher than 500.")
         frame_divider = 500 / hz
-        if not self.send("LDIV({})\n".format(frame_divider), "LDIV={}\n".format(frame_divider)):
+        if not self.send_and_wait("LDIV({})\n".format(frame_divider), "LDIV={}\n".format(frame_divider)):
             raise Exception("Unable to set frame divider.")
 
         self.ft_pub = rospy.Publisher(topic_name, WrenchStamped, queue_size=10)
@@ -40,18 +40,13 @@ class KMS40Driver(object):
         :return: SetTareResponse
         """
         with self.mutex:
-            l0_received = self.send("L0()\n", "L0\n")
-            # there might be some unprocessed wrench msgs left, therefor we have to search for the L0
-            max_waiting_tries = 500
-            while not l0_received:
-                max_waiting_tries -= 1
-                if max_waiting_tries == 0:
-                    raise Exception("Failed not stop wrench stream.")
-                l0_received = self.recv_chunk() == "L0\n"
+            if not self.send_and_wait("L0()\n", "L0\n"):
+                # there might be some unprocessed wrench msgs left, therefor we have to search for the L0
+                raise Exception("Failed not stop wrench stream.")
 
             result = SetTareResponse()
             new_state = 1 if msg.tare else 0
-            result.success = self.send("TARE({})\n".format(new_state), "TARE={}\n".format(new_state))
+            result.success = self.send_and_wait("TARE({})\n".format(new_state), "TARE={}\n".format(new_state))
             if result.success:
                 rospy.loginfo("Changed tare stat to {}".format(new_state))
             else:
@@ -67,8 +62,23 @@ class KMS40Driver(object):
         :return: bool
         """
         self.tn.write(msg)
-        msg = self.recv_chunk()
-        return msg == expected
+        return expected == self.recv_chunk()
+
+    def send_and_wait(self, msg, expected, max_waiting_tries=500):
+        """
+        Sends a msg and waits for the expected response. Returns False if it has not been received within
+        'max_waiting_tries' msgs.
+        :param msg: string
+        :param expected: string
+        :param max_waiting_tries: int
+        :return: bool
+        """
+        self.tn.write(msg)
+        for i in range(max_waiting_tries):
+            msg = self.recv_chunk()
+            if msg == expected:
+                return True
+        return False
 
     def recv_chunk(self):
         """
@@ -117,7 +127,7 @@ class KMS40Driver(object):
         Stops the transmission
         """
         rospy.loginfo("shutdown kms40 driver")
-        self.send("L0()\n", "L0")
+        self.send_and_wait("L0()\n", "L0\n")
 
 
 if __name__ == '__main__':
