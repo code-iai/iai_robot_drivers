@@ -7,6 +7,7 @@ import sys
 from geometry_msgs.msg._WrenchStamped import WrenchStamped
 from iai_kms_40_msgs.srv._SetTare import SetTare, SetTareResponse
 from multiprocessing import Lock
+from std_srvs.srv._SetBool import SetBool, SetBoolResponse, SetBoolRequest
 
 
 class KMS40Driver(object):
@@ -29,7 +30,7 @@ class KMS40Driver(object):
             raise Exception("Unable to set frame divider.")
 
         self.ft_pub = rospy.Publisher(topic_name, WrenchStamped, queue_size=10)
-        self.tare_srv = rospy.Service(service_name, SetTare, self.tare_cb)
+        self.tare_srv = rospy.Service(service_name, SetBool, self.tare_cb)
         rospy.sleep(.5)
         rospy.loginfo("kms driver is now running")
 
@@ -44,11 +45,12 @@ class KMS40Driver(object):
                 # there might be some unprocessed wrench msgs left, therefor we have to search for the L0
                 raise Exception("Failed not stop wrench stream.")
 
-            result = SetTareResponse()
-            new_state = 1 if msg.tare else 0
+            result = SetBoolResponse()
+            new_state = 1 if msg.data else 0
             result.success = self.send_and_wait("TARE({})\n".format(new_state), "TARE={}\n".format(new_state))
             if result.success:
                 rospy.loginfo("Changed tare stat to {}".format(new_state))
+                result.message = "Changed tare stat to {}".format(new_state)
             else:
                 rospy.logerr("Failed to change tare state.")
             self.send("L1()\n", "L1\n")
