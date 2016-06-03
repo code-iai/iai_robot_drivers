@@ -5,7 +5,6 @@ import timeit
 import rospy
 import sys
 from geometry_msgs.msg._WrenchStamped import WrenchStamped
-from iai_kms_40_msgs.srv._SetTare import SetTare, SetTareResponse
 from multiprocessing import Lock
 from std_srvs.srv._SetBool import SetBool, SetBoolResponse, SetBoolRequest
 
