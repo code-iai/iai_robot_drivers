@@ -3,6 +3,7 @@ project(iai_kms_40_driver)
 
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
+  std_srvs
 )
 
 catkin_python_setup()

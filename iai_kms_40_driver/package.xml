@@ -3,7 +3,7 @@
   <name>iai_kms_40_driver</name>
   <version>0.1.0</version>
   <description>
-    A C++ driver library and ROS node for the force/torque sensor
+    A Python driver for the force/torque sensor
     KMS 40 from Weiss Robotics. Written and maintained at the 
     Institute of Artificial Intelligence, University of Bremen.
   </description>
@@ -18,5 +18,7 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>geometry_msgs</build_depend>
+  <build_depend>std_srvs</build_depend>
   <run_depend>geometry_msgs</run_depend>
+  <run_depend>std_srvs</run_depend>
 </package>
