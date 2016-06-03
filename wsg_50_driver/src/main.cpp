@@ -201,7 +201,7 @@ void timer_cb(const ros::TimerEvent& ev)
     joint_states.velocity[0] = -info.speed/1000.0;
     joint_states.velocity[1] = info.speed/1000.0;
 	joint_states.effort.resize(2);
-	joint_states.effort[0] = -info.f_motor;
+	joint_states.effort[0] = info.f_motor;
 	joint_states.effort[1] = info.f_motor;
 	
 	g_pub_joint.publish(joint_states);
