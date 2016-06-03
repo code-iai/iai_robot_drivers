@@ -75,8 +75,7 @@ class KMS40Driver(object):
         """
         self.tn.write(msg)
         for i in range(max_waiting_tries):
-            msg = self.recv_chunk()
-            if msg == expected:
+            if self.recv_chunk() == expected:
                 return True
         return False
 
