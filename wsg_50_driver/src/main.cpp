@@ -174,7 +174,7 @@ void timer_cb(const ros::TimerEvent& ev)
 	// ==== Status msg ====
 	iai_wsg_50_msgs::Status status_msg;
 	status_msg.header.stamp = ros::Time::now();
-    status_msg.header.frame_id = reference_frame;
+	status_msg.header.frame_id = reference_frame;
 	status_msg.status = info.state_text;
 	status_msg.width = info.position;
 	status_msg.speed = info.speed;
