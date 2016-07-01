@@ -453,6 +453,15 @@ int EcatAdmin::ecat_init(){
 
 	//TODO: Check version of the kernel module and the library match, using ecrt_version_magic()
 
+	//FIXME: Does this avoid the reset after the initialization using SDOs?
+	// Or we could avoid the SDO initialization altogether, and just do it after the PDO communication is up
+	for (auto & drive_el: drive_map) {
+		auto & drive = drive_el.second;
+		drive->task_wdata_user_side.controlword = 0x0f;
+	}
+
+
+
 	if(start_omni_realtime() != 0) {
 		std::cerr << "ecat_init(): Could not initialize the realtime thread" << std::endl;
 		return -1;
