@@ -12,6 +12,9 @@ find_package(catkin REQUIRED COMPONENTS
   iai_wsg_50_msgs
 )
 
+
+
+
 catkin_package(
 #   INCLUDE_DIRS include
 #  LIBRARIES vh_pixelmap
@@ -19,13 +22,23 @@ catkin_package(
 #  DEPENDS system_lib
 )
 
+
+include_directories(
+  ${catkin_INCLUDE_DIRS}
+)
+
+
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
 add_executable(wsg_50_sim_keyboard_teleop src/wsg_50_keyboard_teleop.cpp)
 target_link_libraries(wsg_50_sim_keyboard_teleop ${catkin_LIBRARIES})
+add_dependencies(wsg_50_sim_keyboard_teleop wsg_50_common_gencpp)
+
 add_executable(wsg_50_sim_driver src/wsg_50_sim_driver.cpp)
 target_link_libraries(wsg_50_sim_driver ${catkin_LIBRARIES})
 
 add_dependencies(wsg_50_sim_driver ${catkin_EXPORTED_TARGETS})
+add_dependencies(wsg_50_sim_driver wsg_50_common_gencpp)
 
