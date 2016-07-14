@@ -134,13 +134,13 @@ if __name__ == '__main__':
     rospy.init_node('kms40_driver', anonymous=True)
     kms = None
     try:
-        kms = KMS40Driver(rospy.get_param("/kms40/ip"),
-                          rospy.get_param("/kms40/port"),
-                          rospy.get_param("/kms40/publish_rate"),
-                          rospy.get_param("/kms40/frame_id"),
-                          rospy.get_param("/kms40/tcp_timeout"),
-                          rospy.get_param("/kms40/topic_name"),
-                          rospy.get_param("/kms40/service_name"))
+        kms = KMS40Driver(rospy.get_param("~ip"),
+                          rospy.get_param("~port"),
+                          rospy.get_param("~publish_rate"),
+                          rospy.get_param("~frame_id"),
+                          rospy.get_param("~tcp_timeout"),
+                          rospy.get_param("~topic_name"),
+                          rospy.get_param("~service_name"))
         kms.stream_measurements()
     finally:
         #this hopefully always stops the data transmission, otherwise it is likely, that the sensor has to be rebooted
