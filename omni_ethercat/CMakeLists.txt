@@ -45,6 +45,17 @@ include_directories(
 
 
 
+#Since we will use setcap to give access to realtime priority without having root
+# the LD_LIBRARY_PATH will be ignored when running the executable
+# to be able to still find the libraries, record the current LD_LIBRARY_PATH in
+# the executables
+
+SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) 
+SET(CMAKE_INSTALL_RPATH $ENV{LD_LIBRARY_PATH})
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+
 add_executable(omni_ethercat src/omni_ethercat.cpp src/omnilib/omnilib.c src/omnilib/realtime.c)
 add_executable(omni_ethercat2 src/omni_ethercat2.cpp src/ecat_iface.cpp)
 
