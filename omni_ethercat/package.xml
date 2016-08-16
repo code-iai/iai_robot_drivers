@@ -27,6 +27,7 @@
   <depend>tf</depend>
   <depend>diagnostic_updater</depend>
   <depend>iai_control_msgs</depend>
+  <depend>giskard_msgs</depend>
   <depend>soft_runstop</depend>
   <depend>message_runtime</depend>
   <test_depend>gtest</test_depend>
