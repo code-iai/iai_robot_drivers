@@ -61,7 +61,6 @@ commstatus_t commstatus;
 void omnidrive_speedcontrol();
 void configure_torso_drive();
 
-double static old_torso_pos = 0.0;
 
 int omnidrive_init(void)
 {
@@ -190,7 +189,7 @@ void jac_inverse(double *in, double *out)
 }
 
 
-int omnidrive_drive(double x, double y, double a, double torso_pos)
+int omnidrive_drive(double x, double y, double a, double torso_vel)
 {
   // speed limits for the robot
   double wheel_limit = 1.0 ;//0.8;  // a single wheel may drive this fast (m/s)
@@ -230,22 +229,7 @@ int omnidrive_drive(double x, double y, double a, double torso_pos)
     //tar.torque_set_value[i] = 0.0;
   }
 
-  //torso
-  if (old_torso_pos != torso_pos){
-      printf("omnilib-> new_torso_pos = %f\n", torso_pos);
-      tar.target_position[TORSO_DRIVE_SEQ] = torso_pos;
-      tar.send_new_torso_pos = 1;
-  } else {
-      tar.target_position[TORSO_DRIVE_SEQ] = old_torso_pos;
-      tar.send_new_torso_pos = 0;
-  }
-
-  old_torso_pos = torso_pos;
-
-  tar.profile_velocity[TORSO_DRIVE_SEQ] = 250000;
-  tar.profile_acceleration[TORSO_DRIVE_SEQ] = 1000000;
-  tar.profile_deceleration[TORSO_DRIVE_SEQ] = 1000000;
-
+  tar.target_velocity[TORSO_DRIVE_SEQ] = torso_vel;
 
 
   /* Let the kernel know the velocities we want to set. */
@@ -478,16 +462,20 @@ void omnidrive_speedcontrol()
 
 void configure_torso_drive()
 {
+
     //set the torso drive to velocity profile mode, and good default values
+	writeSDO(TORSO_DRIVE_SEQ, 0x6060, 3, INT8); //3 = Velocity profile mode
 
 
+	/*
+	//Old configuration for position control for the torso
     writeSDO(TORSO_DRIVE_SEQ, 0x6081, 200000, UINT32);  //decent profile speed
     writeSDO(TORSO_DRIVE_SEQ, 0x6083, 10000000, UINT32);  //profile acceleration
     writeSDO(TORSO_DRIVE_SEQ, 0x6084, 10000000, UINT32);  //profile deceleration
     writeSDO(TORSO_DRIVE_SEQ, 0x6085, 10000000, UINT32);  //quick stop deceleration
     writeSDO(TORSO_DRIVE_SEQ, 0x6086, 0, INT16);  //motion profile type = 0
     writeSDO(TORSO_DRIVE_SEQ, 0x6060, 1, INT8);  //mode of operation = 1 = profile position mode
-
+	*/
 
 }
 

@@ -44,7 +44,6 @@ typedef struct omniwrite {
     uint32_t profile_velocity[NUM_DRIVES];
     uint32_t profile_acceleration[NUM_DRIVES];
     uint32_t profile_deceleration[NUM_DRIVES];
-    uint8_t send_new_torso_pos;
 
 } omniwrite_t;
 
