@@ -455,10 +455,10 @@ int EcatAdmin::ecat_init(){
 
 	//FIXME: Does this avoid the reset after the initialization using SDOs?
 	// Or we could avoid the SDO initialization altogether, and just do it after the PDO communication is up
-	for (auto & drive_el: drive_map) {
-		auto & drive = drive_el.second;
-		drive->task_wdata_user_side.controlword = 0x0f;
-	}
+	//for (auto & drive_el: drive_map) {
+	//	auto & drive = drive_el.second;
+	//	drive->task_wdata_user_side.controlword = 0x0f;
+	//}
 
 
 
