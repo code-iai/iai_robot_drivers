@@ -24,10 +24,14 @@
 #include <geometry_msgs/TwistStamped.h>
 #include <soft_runstop/Handler.h>
 #include <tf/transform_broadcaster.h>
+#include <tf/transform_datatypes.h>
 #include <diagnostic_updater/diagnostic_updater.h>
 #include <iai_control_msgs/PowerState.h>
 #include <std_msgs/Float64MultiArray.h>
+#include <nav_msgs/Odometry.h>
 #include <giskard_msgs/SemanticFloat64Array.h>
+
+
 
 //For the torso:
 #include <sensor_msgs/JointState.h>
@@ -57,6 +61,7 @@ private:
   ros::Publisher power_pub_;
   ros::Publisher js_pub_; //torso
   ros::Subscriber power_sub_;
+  ros::Publisher odom_pub_;
   ros::Time watchdog_time_;
   ros::Time watchdog_torso_time_;
 
@@ -84,13 +89,15 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(D
 {
   diagnostic_.setHardwareID("omnidrive");
   diagnostic_.add("Base", this, &Omnidrive::stateUpdate);
-  n_.param("frame_id", frame_id_, std::string("/odom"));
-  n_.param("child_frame_id", child_frame_id_, std::string("/base_link"));
+  n_.param("frame_id", frame_id_, std::string("odom"));
+  n_.param("child_frame_id", child_frame_id_, std::string("base_link"));
   n_.param("power_name", power_name_, std::string("Wheels"));
 
   //current_pub_ = n_.advertise<std_msgs::Float64MultiArray>("motor_currents", 1);
   power_pub_ = n_.advertise<iai_control_msgs::PowerState>("/power_state", 1);
   power_sub_ = n_.subscribe<iai_control_msgs::PowerState>("/power_command", 16, &Omnidrive::powerCommand, this);
+
+  odom_pub_ = n_.advertise<nav_msgs::Odometry>("/odom", 3);
 
   js_pub_ = n_.advertise<sensor_msgs::JointState>("/torso/joint_states", 1);  //torso
 
@@ -410,6 +417,21 @@ void Omnidrive::main()
       q.setRPY(0, 0, a);
       tf::Transform pose(q, tf::Point(x, y, 0.0));
       // FIXME: publish this on a separate topic like /base/odom
+
+      nav_msgs::Odometry odom_msg;
+      odom_msg.header.stamp = ros::Time::now();
+      odom_msg.header.frame_id = frame_id_;
+      odom_msg.child_frame_id = child_frame_id_;
+      //odom_msg.pose.pose.position.x = x;
+      //odom_msg.pose.pose.position.y = y;
+      //odom_msg.pose.pose.position.z = 0.0;
+      //odom_msg.pose.pose.orientation = tf::createQuaternionMsgFromYaw(a);
+      tf::poseTFToMsg(pose, odom_msg.pose.pose);
+
+      odom_pub_.publish(odom_msg);
+      
+      
+
       transforms.sendTransform(tf::StampedTransform(pose, ros::Time::now(), frame_id_, child_frame_id_));
       // FIXME: publish actual base twist on topic like /base/vel
       tf_publish_counter = 0;
