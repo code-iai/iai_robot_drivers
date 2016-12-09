@@ -95,6 +95,7 @@ class KMS40Driver(object):
         self.net_error_count = 0
 
         msg = ""
+        import socket
 
         while try_to_read:
             if self.net_error_count > 10:
@@ -102,14 +103,22 @@ class KMS40Driver(object):
 
             try:
                 msg = self.tn.read_until("\n", timeout=self.tcp_timeout)
-            except EOFError:
-                print("EOFError, restarting tn")
+            #except EOFError:
+            #    rospy.logerror("EOFError, restarting tn")
+            except socket.error:
+                self.net_error_count += 1
+                rospy.logerr(sys.exc_info()[0])
+                import time
+                rospy.logerr('will restart connection')
+                time.sleep(5)
                 self.tn = telnetlib.Telnet(self.ip, self.port)
+
+                rospy.logwarn('restarting streaming')
                 kms.stream_measurements()
+                
+                rospy.logwarn('should work again')
                 #self.tn.open(self.ip, self.port)
-            except:
-                print(sys.exc_info()[0])
-                raise
+                #raise
                 
 
             #FIXME: Better checking for a valid package
