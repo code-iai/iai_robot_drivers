@@ -145,17 +145,17 @@ void timer_cb(const ros::TimerEvent& ev)
   
 	// ==== Call custom measure-and-move command ====
 	int res = 0;
-	if (!isnan(g_goal_position)) {
+	if (!std::isnan(g_goal_position)) {
 		ROS_INFO("Position command: pos=%5.1f, speed=%5.1f", g_goal_position, g_speed);
         res = script_measure_move(1, g_goal_position, g_speed, info);
-	} else if (!isnan(g_goal_speed)) {
+	} else if (!std::isnan(g_goal_speed)) {
 		ROS_INFO("Velocity command: speed=%5.1f", g_goal_speed);
         res = script_measure_move(2, 0, g_goal_speed, info);
 	} else
         res = script_measure_move(0, 0, 0, info);
-	if (!isnan(g_goal_position))
+	if (!std::isnan(g_goal_position))
 		g_goal_position = NAN;
-	if (!isnan(g_goal_speed))
+	if (!std::isnan(g_goal_speed))
 		g_goal_speed = NAN;
 
 	if (!res) {
