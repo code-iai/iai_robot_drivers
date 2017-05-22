@@ -7,7 +7,6 @@
   <arg name="grasping_force" default="20"/>
   <arg name="protocol" default="tcp"/>
   <arg name="gripper_name" default="gripper"/>
-  <arg name="l_finger_joint_name" default="$(arg gripper_name)_base_gripper_left_joint"/>
   <arg name="r_finger_joint_name" default="$(arg gripper_name)_base_gripper_right_joint"/>
   <arg name="reference_frame" default="$(arg gripper_name)_tool_frame"/> 
   <arg name="node_name" default="wsg_50_driver"/>
@@ -18,7 +17,6 @@
     <param name="rate" type="double" value="$(arg rate)"/>
     <param name="grasping_force" type="double" value="$(arg grasping_force)"/>
     <param name="protocol" type="string" value="$(arg protocol)"/>
-    <param name="l_finger_joint_name" type="string" value="$(arg l_finger_joint_name)"/>
     <param name="r_finger_joint_name" type="string" value="$(arg r_finger_joint_name)"/>
     <param name="reference_frame" type="string" value="$(arg reference_frame)"/>
     <remap from="~joint_states" to="$(arg js_topic)"/>
