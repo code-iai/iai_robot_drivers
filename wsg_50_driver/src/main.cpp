@@ -232,6 +232,7 @@ int main( int argc, char **argv )
    nh.param("rate", rate, 1.0); // With custom script, up to 30Hz are possible
    nh.param("grasping_force", grasping_force, 0.0);
    nh.param("r_finger_joint_name", r_finger_joint_name, std::string("wsg_50_gripper_base_joint"));
+   nh.param("reference_frame", reference_frame, std::string("wsg_50_gripper_base_link"));
 	
    if (protocol == "udp")
        use_udp = true;
