@@ -1,5 +1,5 @@
 /*
- * This file is part of the libomnidrive project.
+ * This file is part of the omni_ethercat project.
  *
  * Copyright (C) 2016 Georg Bartels <georg.bartels@cs.uni-bremen.de>
  *

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
   <arg name="js_topic" default="~joint_states"/>
-  <arg name="ip" default="192.168.102.63"/>
+  <arg name="ip" default="192.168.100.166"/>
   <arg name="port" default="1000"/>
   <arg name="rate" default="30"/>
   <arg name="grasping_force" default="20"/>

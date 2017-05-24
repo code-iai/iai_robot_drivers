@@ -21,12 +21,17 @@
 #include <math.h>
 
 #include <ros/ros.h>
-#include <geometry_msgs/Twist.h>
+#include <geometry_msgs/TwistStamped.h>
 #include <soft_runstop/Handler.h>
 #include <tf/transform_broadcaster.h>
+#include <tf/transform_datatypes.h>
 #include <diagnostic_updater/diagnostic_updater.h>
 #include <iai_control_msgs/PowerState.h>
 #include <std_msgs/Float64MultiArray.h>
+#include <nav_msgs/Odometry.h>
+#include <giskard_msgs/SemanticFloat64Array.h>
+
+
 
 //For the torso:
 #include <sensor_msgs/JointState.h>
@@ -56,35 +61,43 @@ private:
   ros::Publisher power_pub_;
   ros::Publisher js_pub_; //torso
   ros::Subscriber power_sub_;
+  ros::Publisher odom_pub_;
   ros::Time watchdog_time_;
+  ros::Time watchdog_torso_time_;
+
   double drive_[3], drive_last_[3];
-  double torso_des_pos_; // torso
-  bool fresh_torso_des_pos_; //torso
+  double torso_des_vel_; // torso
   soft_runstop::Handler soft_runstop_handler_;
   std::string frame_id_;
   std::string child_frame_id_;
   std::string power_name_;
-  void cmdArrived(const geometry_msgs::Twist::ConstPtr& msg);
+  void cmdArrived(const geometry_msgs::TwistStamped::ConstPtr& msg);
+  void cmdArrivedTwist(const geometry_msgs::Twist::ConstPtr& msg);
   void torsoCmdArrived(const std_msgs::Float64::ConstPtr& msg); //torso
+  void giskardCommand(const giskard_msgs::SemanticFloat64Array& msg);
   void stateUpdate(diagnostic_updater::DiagnosticStatusWrapper &s);
   void powerCommand(const iai_control_msgs::PowerState::ConstPtr& msg);
+
+  std::map<std::string, unsigned int> joint_name_to_index_;
 public:
   Omnidrive();
   void main();
 };
 
 
-Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(Duration(0.5)), fresh_torso_des_pos_(false)
+Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(Duration(0.5))
 {
   diagnostic_.setHardwareID("omnidrive");
   diagnostic_.add("Base", this, &Omnidrive::stateUpdate);
-  n_.param("frame_id", frame_id_, std::string("/odom"));
-  n_.param("child_frame_id", child_frame_id_, std::string("/base_link"));
+  n_.param("frame_id", frame_id_, std::string("odom"));
+  n_.param("child_frame_id", child_frame_id_, std::string("base_link"));
   n_.param("power_name", power_name_, std::string("Wheels"));
 
   //current_pub_ = n_.advertise<std_msgs::Float64MultiArray>("motor_currents", 1);
   power_pub_ = n_.advertise<iai_control_msgs::PowerState>("/power_state", 1);
   power_sub_ = n_.subscribe<iai_control_msgs::PowerState>("/power_command", 16, &Omnidrive::powerCommand, this);
+
+  odom_pub_ = n_.advertise<nav_msgs::Odometry>("/odom", 3);
 
   js_pub_ = n_.advertise<sensor_msgs::JointState>("/torso/joint_states", 1);  //torso
 
@@ -93,17 +106,50 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(D
     drive_[i] = 0;
   }
 
+
+  //Only looking for the info on one joint from the giskard message
+  joint_name_to_index_.insert(std::pair<std::string, unsigned int>("triangle_base_joint",0));
+
+
   watchdog_time_ = ros::Time::now();
 }
 
-void Omnidrive::cmdArrived(const geometry_msgs::Twist::ConstPtr& msg)
+void Omnidrive::cmdArrivedTwist(const geometry_msgs::Twist::ConstPtr& msg)
+{
+
+	if ( isnan(msg->linear.x) or isnan(msg->linear.y) or isnan(msg->angular.z)) {
+		drive_[0] = 0;
+		drive_[1] = 0;
+		drive_[2] = 0;
+		ROS_WARN("command got nan, dropping it");
+	} else {
+		drive_[0] = msg->linear.x;
+		drive_[1] = msg->linear.y;
+		drive_[2] = msg->angular.z;
+	}
+
+	//FIXME:  FUGLY, this needs to be fixed in omnilib.c (fix the jacobian)
+	//  plus, the direction of rotation and position of wheels needs to be documented
+	//Rotate 180deg around the z axis
+	drive_[0] = -drive_[0];
+	drive_[1] = -drive_[1];
+
+	//also the z rotation was wrong
+	drive_[2] = -drive_[2];
+
+
+	watchdog_time_ = ros::Time::now();
+
+}
+
+void Omnidrive::cmdArrived(const geometry_msgs::TwistStamped::ConstPtr& msg)
 {
   // FIXME: use TwistStamped instead of Twist and check that people command in the right frame
   // NOTE: No need for synchronization since this is called inside spinOnce() in the main loop
 
-  drive_[0] = msg->linear.x;
-  drive_[1] = msg->linear.y;
-  drive_[2] = msg->angular.z;
+  drive_[0] = msg->twist.linear.x;
+  drive_[1] = msg->twist.linear.y;
+  drive_[2] = msg->twist.angular.z;
 
 
   //FIXME:  FUGLY, this needs to be fixed in omnilib.c (fix the jacobian)
@@ -126,12 +172,43 @@ void Omnidrive::cmdArrived(const geometry_msgs::Twist::ConstPtr& msg)
 void Omnidrive::torsoCmdArrived(const std_msgs::Float64::ConstPtr& msg)
 {
 
-  printf("Desired torso position: %f\n", msg->data);
-  torso_des_pos_ = msg->data * torso_ticks_to_m;
-  fresh_torso_des_pos_ = true;
+  printf("Desired torso velocity: %f m/s\n", msg->data);
+  torso_des_vel_ = msg->data * torso_ticks_to_m;
+  watchdog_torso_time_ = ros::Time::now();
+}
+
+void Omnidrive::giskardCommand(const giskard_msgs::SemanticFloat64Array& msg)
+{
+
+  bool received_one_valid_command = false;
+
+  for (unsigned int i=0; i < msg.data.size() ; ++i) {
+	  //cout << msg.data[i].semantics << endl;
+	  //cout << msg.data[i].value << endl;
+
+	  std::map<std::string, unsigned int>::iterator it;
+	  it = joint_name_to_index_.find(msg.data[i].semantics); //returns an iterator if found, otherwise map::end
+
+	  if (it != joint_name_to_index_.end()) {
+		  //the name is in my list
+		  unsigned int j = it->second;
+		  torso_des_vel_ = msg.data[i].value * torso_ticks_to_m;
+		  std::cout << "Assigned " << it->first << " value " << torso_des_vel_ << std::endl;
+		  received_one_valid_command = true;
+	  }
+
+  }
+
+
+  if (received_one_valid_command) {
+	  //pet the watchdog
+	  watchdog_torso_time_ = ros::Time::now();
+
+  }
 
 
 }
+
 
 
 void Omnidrive::stateUpdate(diagnostic_updater::DiagnosticStatusWrapper &s)
@@ -250,7 +327,9 @@ void Omnidrive::main()
   tf::TransformBroadcaster transforms;
 
   ros::Subscriber sub = n_.subscribe("/base/cmd_vel", 10, &Omnidrive::cmdArrived, this);
+  ros::Subscriber sub_twist = n_.subscribe("/base/cmd_vel_twist", 10, &Omnidrive::cmdArrivedTwist, this);
   ros::Subscriber sub_torso = n_.subscribe("/torso/cmd_vel", 10, &Omnidrive::torsoCmdArrived, this); //torso
+  ros::Subscriber sub_giskard = n_.subscribe("giskard_command", 1, &Omnidrive::giskardCommand, this); //torso too
   ros::Publisher hard_runstop_pub = n_.advertise<std_msgs::Bool>("/hard_runstop", 1);
 
   double x=0, y=0, a=0, torso_pos=0;
@@ -300,6 +379,14 @@ void Omnidrive::main()
         watchdog_time_ = ros::Time::now();
     }
 
+    if( (( ros::Time::now() - watchdog_torso_time_) > watchdog_period) || soft_runstop_handler_.getState()) {
+    	//ROS_WARN("torso_watchdog active");
+    	//Watchdog for the torso
+    	torso_des_vel_ = 0.0;
+    	//While the watchdog is active, revisit here after watchdog_period
+    	watchdog_torso_time_ = ros::Time::now();
+
+    }
 
     //Evil acceleration limitation
     // this runs in a slow loop
@@ -322,7 +409,7 @@ void Omnidrive::main()
     //if the watchdog was activated drive_[0-2] are 0.0
     //only call omnidrive_drive once in the loop
     //the last call will probably override the previous ones 
-    omnidrive_drive(drive_[0], drive_[1], drive_[2], torso_des_pos_);
+    omnidrive_drive(drive_[0], drive_[1], drive_[2], torso_des_vel_);
 
     // publish odometry readings
     if(++tf_publish_counter == tf_send_rate) {
@@ -330,6 +417,21 @@ void Omnidrive::main()
       q.setRPY(0, 0, a);
       tf::Transform pose(q, tf::Point(x, y, 0.0));
       // FIXME: publish this on a separate topic like /base/odom
+
+      nav_msgs::Odometry odom_msg;
+      odom_msg.header.stamp = ros::Time::now();
+      odom_msg.header.frame_id = frame_id_;
+      odom_msg.child_frame_id = child_frame_id_;
+      //odom_msg.pose.pose.position.x = x;
+      //odom_msg.pose.pose.position.y = y;
+      //odom_msg.pose.pose.position.z = 0.0;
+      //odom_msg.pose.pose.orientation = tf::createQuaternionMsgFromYaw(a);
+      tf::poseTFToMsg(pose, odom_msg.pose.pose);
+
+      odom_pub_.publish(odom_msg);
+      
+      
+
       transforms.sendTransform(tf::StampedTransform(pose, ros::Time::now(), frame_id_, child_frame_id_));
       // FIXME: publish actual base twist on topic like /base/vel
       tf_publish_counter = 0;

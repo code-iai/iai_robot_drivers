@@ -33,6 +33,11 @@ class KMS40Driver(object):
         rospy.sleep(.5)
         rospy.loginfo("kms driver is now running")
 
+	self.net_error_count = 0
+        self.ip = ip
+        self.port = port
+
+
     def tare_cb(self, msg):
         """
         Callback for the tare service.
@@ -85,9 +90,46 @@ class KMS40Driver(object):
         Receives the next msg.
         :return: string
         """
-        msg = self.tn.read_until("\n", timeout=self.tcp_timeout)
-        if msg == "":
-            raise Exception("timeout while receiving, you probably need to reboot the sensor.")
+
+        try_to_read = True
+        self.net_error_count = 0
+
+        msg = ""
+        import socket
+
+        while try_to_read:
+            if self.net_error_count > 10:
+                raise Exception("timeout while receiving, you probably need to reboot the sensor.")
+
+            try:
+                msg = self.tn.read_until("\n", timeout=self.tcp_timeout)
+            #except EOFError:
+            #    rospy.logerror("EOFError, restarting tn")
+            except socket.error:
+                self.net_error_count += 1
+                rospy.logerr(sys.exc_info()[0])
+                import time
+                rospy.logerr('will restart connection')
+                time.sleep(5)
+                self.tn = telnetlib.Telnet(self.ip, self.port)
+
+                rospy.logwarn('restarting streaming')
+                kms.stream_measurements()
+                
+                rospy.logwarn('should work again')
+                #self.tn.open(self.ip, self.port)
+                #raise
+                
+
+            #FIXME: Better checking for a valid package
+            if msg == "":
+                self.net_error_count += 1
+                break
+            else:
+                self.net_error_count = 0
+                try_to_read = False
+
+
         return msg
 
     def ft_to_msg(self, ft):
@@ -120,7 +162,9 @@ class KMS40Driver(object):
         self.send("L1()\n", "L1\n")
         while not rospy.is_shutdown():
             with self.mutex:
-                self.ft_pub.publish(self.ft_to_msg(self.recv_chunk()))
+                recv_data = self.recv_chunk()
+                if recv_data != "":
+                    self.ft_pub.publish(self.ft_to_msg(recv_data))
 
     def stop(self):
         """
@@ -134,13 +178,13 @@ if __name__ == '__main__':
     rospy.init_node('kms40_driver', anonymous=True)
     kms = None
     try:
-        kms = KMS40Driver(rospy.get_param("/kms40/ip"),
-                          rospy.get_param("/kms40/port"),
-                          rospy.get_param("/kms40/publish_rate"),
-                          rospy.get_param("/kms40/frame_id"),
-                          rospy.get_param("/kms40/tcp_timeout"),
-                          rospy.get_param("/kms40/topic_name"),
-                          rospy.get_param("/kms40/service_name"))
+        kms = KMS40Driver(rospy.get_param("~ip"),
+                          rospy.get_param("~port"),
+                          rospy.get_param("~publish_rate"),
+                          rospy.get_param("~frame_id"),
+                          rospy.get_param("~tcp_timeout"),
+                          rospy.get_param("~topic_name"),
+                          rospy.get_param("~service_name"))
         kms.stream_measurements()
     finally:
         #this hopefully always stops the data transmission, otherwise it is likely, that the sensor has to be rebooted

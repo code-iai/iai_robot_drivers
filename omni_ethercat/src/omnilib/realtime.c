@@ -250,7 +250,6 @@ static int max_v = 100;
 static omniwrite_t tar, tar_buffer;  /* Target velocities */
 static omniread_t cur, cur_buffer;    /* Current velocities/torques/positions */
 
-static uint8_t old_send_new_torso_pos = 0;
 
 /*****************************************************************************/
 
@@ -493,23 +492,10 @@ void cyclic_task()
     tar.profile_acceleration[TORSO_DRIVE_SEQ_] = 10000000;
     tar.profile_deceleration[TORSO_DRIVE_SEQ_] = 10000000;
 
-    EC_WRITE_S32(domain1_pd + off_target_position[TORSO_DRIVE_SEQ_], tar.target_position[TORSO_DRIVE_SEQ_]);
+    EC_WRITE_S32(domain1_pd + off_target_velocity[TORSO_DRIVE_SEQ_], tar.target_velocity[TORSO_DRIVE_SEQ_]  );
     EC_WRITE_U32(domain1_pd + off_profile_velocity[TORSO_DRIVE_SEQ_], tar.profile_velocity[TORSO_DRIVE_SEQ_]);
-    EC_WRITE_U32(domain1_pd + off_profile_acceleration[TORSO_DRIVE_SEQ_], tar.profile_acceleration[TORSO_DRIVE_SEQ_]);
-    EC_WRITE_U32(domain1_pd + off_profile_deceleration[TORSO_DRIVE_SEQ_], tar.profile_deceleration[TORSO_DRIVE_SEQ_]);
-
-
-    //only send 0x3f on the rising edge of send_new_torso_pos
-    if ( (tar.send_new_torso_pos == 1) && (old_send_new_torso_pos == 0 )) {
-        printf("Sending 0x3f\n");
-	printf("Moving to %d\n", tar.target_position[TORSO_DRIVE_SEQ_]);
-        EC_WRITE_U16(domain1_pd + off_controlword[TORSO_DRIVE_SEQ_], 0x3f);
-    } else {
-        EC_WRITE_U16(domain1_pd + off_controlword[TORSO_DRIVE_SEQ_], 0x0f);
-    }
-
-
-    old_send_new_torso_pos = tar.send_new_torso_pos;
+    EC_WRITE_U32(domain1_pd + off_profile_acceleration[TORSO_DRIVE_SEQ_], tar.profile_acceleration[TORSO_DRIVE_SEQ_]);    // 5000000
+    EC_WRITE_U32(domain1_pd + off_profile_deceleration[TORSO_DRIVE_SEQ_], tar.profile_deceleration[TORSO_DRIVE_SEQ_]);	//2000000 was smoothing out the jumpiness before
 
 	/* Send process data. */
 	ecrt_domain_queue(domain1);
