@@ -4,4 +4,4 @@
 
 ## Controlls
 
-!["controlls"]ps3_controller.png)
+![controlls](ps3_controller.png)
