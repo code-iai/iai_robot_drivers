@@ -98,7 +98,7 @@ class ZeroGravity(object):
         self.stiffness[arm_name] = np.max((self.min_stiffness, self.stiffness[arm_name]), axis=0)
         cmd = MultiJointVelocityImpedanceCommand()
         cmd.stiffness = self.stiffness[arm_name]
-        # self.stiffness_pub[arm_name].publish(cmd)
+        self.stiffness_pub[arm_name].publish(cmd)
         rospy.loginfo('stiffness of {} arm set to {}'.format(arm_name, self.stiffness[arm_name]))
         # if (self.stiffness[arm_name] > self.reset_setpoints_threshold).all() and not self.reset_setpoints_srv(TriggerRequest()):
         #     rospy.logerr('setpoints reset failed!')
