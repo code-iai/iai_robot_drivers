@@ -1,0 +1,9 @@
+<launch>
+  <node name="boxy_zero_gravity" pkg="boxy_zero_gravity" type="zero_gravity.py" output="screen">
+  	<param name="max_stiffness" value="[400, 400, 400, 300, 200, 200, 200]" />
+  	<param name="min_stiffness" value="[0, 0, 0, 0, 0, 0, 0]" />
+  	<param name="number_of_stiffness_levels" value="20"/>
+  	<param name="left_arm_cmd_topic" value="/left_arm/command"/>
+  	<param name="right_arm_cmd_topic" value="/right_arm/command"/>
+  </node>	
+</launch>
