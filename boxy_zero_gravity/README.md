@@ -4,4 +4,4 @@
 
 ## Controlls
 
-![Alt text](ps3_controller.pdf?raw=true "Controlls")
+!["controlls"]ps3_controller.png)
