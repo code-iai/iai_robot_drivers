@@ -117,7 +117,7 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(D
 void Omnidrive::cmdArrivedTwist(const geometry_msgs::Twist::ConstPtr& msg)
 {
 
-	if ( isnan(msg->linear.x) or isnan(msg->linear.y) or isnan(msg->angular.z)) {
+	if ( std::isnan(msg->linear.x) or std::isnan(msg->linear.y) or std::isnan(msg->angular.z)) {
 		drive_[0] = 0;
 		drive_[1] = 0;
 		drive_[2] = 0;
