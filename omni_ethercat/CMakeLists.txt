@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   diagnostic_updater
   iai_control_msgs
   soft_runstop
+  giskard_msgs
 )
 
 find_package(Eigen3 REQUIRED)
@@ -34,6 +35,7 @@ catkin_package(
     diagnostic_updater 
     iai_control_msgs 
     soft_runstop
+    giskard_msgs
   DEPENDS
     Eigen
 )
