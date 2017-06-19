@@ -29,4 +29,6 @@ add_dependencies(ethercat upstream_igh_eml)
 
 catkin_package(
   LIBRARIES ethercat
+  INCLUDE_DIRS ${CATKIN_DEVEL_PREFIX}/include
 )
+
