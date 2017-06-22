@@ -196,9 +196,8 @@ void Omnidrive::giskardCommand(const sensor_msgs::JointState& msg)
       return;
   }
 
+  //Search the names for a matching name in the list of joints controlled by this process
   for (unsigned int i=0; i < len_name ; ++i) {
-
-
 	  std::map<std::string, unsigned int>::iterator it;
 	  it = joint_name_to_index_.find(msg.name[i]); //returns an iterator if found, otherwise map::end
 
@@ -206,7 +205,7 @@ void Omnidrive::giskardCommand(const sensor_msgs::JointState& msg)
 		  //the name is in my list
 		  unsigned int j = it->second;
 		  torso_des_vel_ = msg.velocity[i] * torso_ticks_to_m;
-		  std::cout << "Assigned " << it->first << " value " << torso_des_vel_ << std::endl;
+		  //std::cout << "Assigned " << it->first << " value " << torso_des_vel_ << std::endl;
 		  received_one_valid_command = true;
 	  }
 
