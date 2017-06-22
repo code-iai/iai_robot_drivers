@@ -29,7 +29,7 @@
 #include <iai_control_msgs/PowerState.h>
 #include <std_msgs/Float64MultiArray.h>
 #include <nav_msgs/Odometry.h>
-#include <giskard_msgs/SemanticFloat64Array.h>
+#include <sensor_msgs/JointState.h>
 
 
 
@@ -74,7 +74,8 @@ private:
   void cmdArrived(const geometry_msgs::TwistStamped::ConstPtr& msg);
   void cmdArrivedTwist(const geometry_msgs::Twist::ConstPtr& msg);
   void torsoCmdArrived(const std_msgs::Float64::ConstPtr& msg); //torso
-  void giskardCommand(const giskard_msgs::SemanticFloat64Array& msg);
+  void giskardCommand(const sensor_msgs::JointState& msg);
+  bool giskardCommand_reported_error;
   void stateUpdate(diagnostic_updater::DiagnosticStatusWrapper &s);
   void powerCommand(const iai_control_msgs::PowerState::ConstPtr& msg);
 
@@ -109,6 +110,7 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(D
 
   //Only looking for the info on one joint from the giskard message
   joint_name_to_index_.insert(std::pair<std::string, unsigned int>("triangle_base_joint",0));
+  giskardCommand_reported_error = false;
 
 
   watchdog_time_ = ros::Time::now();
@@ -177,22 +179,33 @@ void Omnidrive::torsoCmdArrived(const std_msgs::Float64::ConstPtr& msg)
   watchdog_torso_time_ = ros::Time::now();
 }
 
-void Omnidrive::giskardCommand(const giskard_msgs::SemanticFloat64Array& msg)
+void Omnidrive::giskardCommand(const sensor_msgs::JointState& msg)
 {
 
   bool received_one_valid_command = false;
 
-  for (unsigned int i=0; i < msg.data.size() ; ++i) {
-	  //cout << msg.data[i].semantics << endl;
-	  //cout << msg.data[i].value << endl;
+  //check length of arrays, if they don't match, bail out
+  int len_name = msg.name.size();
+  int len_vel = msg.velocity.size();
+
+  if (len_name != len_vel) {
+      if (not giskardCommand_reported_error) {
+          ROS_WARN("Omnidrive::giskardCommand: Received wrong length of arrays. Ignoring. This warning will only print once.");
+          giskardCommand_reported_error = true;
+      }
+      return;
+  }
+
+  for (unsigned int i=0; i < len_name ; ++i) {
+
 
 	  std::map<std::string, unsigned int>::iterator it;
-	  it = joint_name_to_index_.find(msg.data[i].semantics); //returns an iterator if found, otherwise map::end
+	  it = joint_name_to_index_.find(msg.name[i]); //returns an iterator if found, otherwise map::end
 
 	  if (it != joint_name_to_index_.end()) {
 		  //the name is in my list
 		  unsigned int j = it->second;
-		  torso_des_vel_ = msg.data[i].value * torso_ticks_to_m;
+		  torso_des_vel_ = msg.velocity[i] * torso_ticks_to_m;
 		  std::cout << "Assigned " << it->first << " value " << torso_des_vel_ << std::endl;
 		  received_one_valid_command = true;
 	  }
