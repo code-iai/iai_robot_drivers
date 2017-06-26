@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(igh_eml)
 
+#To avoid problem on early check of existance of this directory
+file(MAKE_DIRECTORY ${CATKIN_DEVEL_PREFIX}/include)
+
 find_package(catkin REQUIRED)
 
 include(ExternalProject)
