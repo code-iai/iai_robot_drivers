@@ -23,8 +23,6 @@
 #include <ros/ros.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <soft_runstop/Handler.h>
-#include <tf/transform_broadcaster.h>
-#include <tf/transform_datatypes.h>
 #include <diagnostic_updater/diagnostic_updater.h>
 #include <iai_control_msgs/PowerState.h>
 #include <std_msgs/Float64MultiArray.h>
@@ -311,7 +309,7 @@ void Omnidrive::powerCommand(const iai_control_msgs::PowerState::ConstPtr& msg)
 void Omnidrive::main()
 {
   double speed, acc_max, t, radius, drift;
-  int tf_frequency, runstop_frequency, js_frequency;
+  int runstop_frequency, js_frequency;
   const int loop_frequency = 250; // 250Hz update frequency
 
   n_.param("speed", speed, 100.0); // 0.1
@@ -319,7 +317,6 @@ void Omnidrive::main()
   n_.param("acceleration", acc_max, 1000.0);  //0.5*speed*speed/0.015
   // radius of the robot
   n_.param("radius", radius, 0.6);
-  n_.param("tf_frequency", tf_frequency, 50);
   n_.param("js_frequency", js_frequency, 125);
   n_.param("runstop_frequency", runstop_frequency, 10);
   n_.param("watchdog_period", t, 0.15);
@@ -336,8 +333,6 @@ void Omnidrive::main()
   }
   omnidrive_set_correction(drift);
 
-  tf::TransformBroadcaster transforms;
-
   ros::Subscriber sub = n_.subscribe("/base/cmd_vel", 10, &Omnidrive::cmdArrived, this);
   ros::Subscriber sub_twist = n_.subscribe("/base/cmd_vel_twist", 10, &Omnidrive::cmdArrivedTwist, this);
   ros::Subscriber sub_torso = n_.subscribe("/torso/cmd_vel", 10, &Omnidrive::torsoCmdArrived, this); //torso
@@ -346,11 +341,7 @@ void Omnidrive::main()
 
   double x=0, y=0, a=0, torso_pos=0;
 
-  int tf_publish_counter=0;
-  int tf_send_rate = loop_frequency / tf_frequency;
-
-
-  //torso:
+  //torso and odometry published as joint_states:
   int js_publish_counter=0;
   int js_send_rate = loop_frequency / js_frequency;
 
@@ -423,42 +414,36 @@ void Omnidrive::main()
     //the last call will probably override the previous ones 
     omnidrive_drive(drive_[0], drive_[1], drive_[2], torso_des_vel_);
 
+
+
     // publish odometry readings
-    if(++tf_publish_counter == tf_send_rate) {
-      tf::Quaternion q;
-      q.setRPY(0, 0, a);
-      tf::Transform pose(q, tf::Point(x, y, 0.0));
-      // FIXME: publish this on a separate topic like /base/odom
-
-      nav_msgs::Odometry odom_msg;
-      odom_msg.header.stamp = ros::Time::now();
-      odom_msg.header.frame_id = frame_id_;
-      odom_msg.child_frame_id = child_frame_id_;
-      //odom_msg.pose.pose.position.x = x;
-      //odom_msg.pose.pose.position.y = y;
-      //odom_msg.pose.pose.position.z = 0.0;
-      //odom_msg.pose.pose.orientation = tf::createQuaternionMsgFromYaw(a);
-      tf::poseTFToMsg(pose, odom_msg.pose.pose);
-
-      odom_pub_.publish(odom_msg);
-      
-      
-
-      transforms.sendTransform(tf::StampedTransform(pose, ros::Time::now(), frame_id_, child_frame_id_));
-      // FIXME: publish actual base twist on topic like /base/vel
-      tf_publish_counter = 0;
-    }
-
-
     // publish torso position
     if(++js_publish_counter == js_send_rate) {
+
+      // FIXME: report the actual velocity and effort values
+
       sensor_msgs::JointState msg;
       msg.header.stamp = ros::Time::now();
       msg.name.push_back("triangle_base_joint");
       msg.position.push_back(torso_pos);
-      // FIXME: report the actual values
       msg.velocity.push_back(0.0);
       msg.effort.push_back(0.0);
+
+      msg.name.push_back("odom_x_joint");
+      msg.position.push_back(x);
+      msg.velocity.push_back(0.0);
+      msg.effort.push_back(0.0);
+
+      msg.name.push_back("odom_y_joint");
+      msg.position.push_back(y);
+      msg.velocity.push_back(0.0);
+      msg.effort.push_back(0.0);
+
+      msg.name.push_back("odom_z_joint");
+      msg.position.push_back(a);
+      msg.velocity.push_back(0.0);
+      msg.effort.push_back(0.0);
+
       js_pub_.publish(msg);
       js_publish_counter = 0;
     }
@@ -494,6 +479,4 @@ int main(int argc, char *argv[])
 
   Omnidrive drive;
   drive.main();
-
-
 }

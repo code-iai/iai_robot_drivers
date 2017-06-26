@@ -14,7 +14,6 @@ find_package(catkin REQUIRED COMPONENTS
   igh_eml
   geometry_msgs
   message_runtime
-  tf
   diagnostic_updater
   iai_control_msgs
   soft_runstop
@@ -30,9 +29,8 @@ catkin_package(
     std_msgs 
     igh_eml 
     geometry_msgs 
-    message_runtime 
-    tf 
-    diagnostic_updater 
+    message_runtime
+    diagnostic_updater
     iai_control_msgs 
     soft_runstop
     sensor_msgs
