@@ -171,7 +171,7 @@ void quit( const char *reason )
 }
 
 
-const char * getStateValues( unsigned char *b ){
+void getStateValues( unsigned char *b, char * out ){
 
 	/*
 	unsigned char aux[4]; 
@@ -190,7 +190,6 @@ const char * getStateValues( unsigned char *b ){
 	*/
 
 	char resp[1024] = "| ";
-
 	if (b[2] & 0x1){	// D0 ==> LSB
 		//dbgPrint("Fingers Referenced.\n");
 		char aux0[21] = "Fingers Referenced |";
@@ -206,7 +205,7 @@ const char * getStateValues( unsigned char *b ){
 		char aux2[48] =" Axis is blocked in negative moving direction |";
 		strcat(resp, aux2);
 	}
-     	if (b[2] & 0x8){  // D3
+     if (b[2] & 0x8){  // D3
 		//dbgPrint("Axis is blocked in positive moving direction.\n");
 		char aux3[48] =" Axis is blocked in positive moving direction |";
 		strcat(resp, aux3);
@@ -273,7 +272,7 @@ const char * getStateValues( unsigned char *b ){
 		char aux18[17] = " Command Error |";
 		strcat(resp, aux18);
 	}
-     	if (b[4] & 0x8){  // D19
+     if (b[4] & 0x8){  // D19
 		//dbgPrint("A script is currently running.\n");
 		char aux19[33] = " A script is currently running |";
 		strcat(resp, aux19);
@@ -289,7 +288,7 @@ const char * getStateValues( unsigned char *b ){
 	// D31 ==> MSB
 
 	//dbgPrint("%s\n", resp);
-	return resp;
+	strcpy(out, resp);
 }
 
 

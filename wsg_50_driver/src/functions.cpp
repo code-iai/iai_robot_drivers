@@ -368,13 +368,14 @@ int script_measure_move (unsigned char cmd_type, float cmd_width, float cmd_spee
 		unsigned char resp_state[6] = {0,0,0,0,0,0};
 		resp_state[2] = resp[2];
 		info.state = resp[2];					 off+=1;
-		info.state_text = std::string(getStateValues(resp_state));
+		char muh[1024] = "";
+		getStateValues(resp_state, muh);
+		info.state_text = std::string(muh);
 		info.position = convert(&resp[off]);     off+=4;
 		info.speed = convert(&resp[off]);        off+=4;
 		info.f_motor = convert(&resp[off]);      off+=4;
 		info.f_finger0 = convert(&resp[off]);    off+=4;
 		info.f_finger1 = convert(&resp[off]);    off+=4;
-
 
 		info.ismoving = (info.state & 0x02/*fingers mnoving*/) != 0;
 		// only in position mode; cannot determine reliably for velocity mode
@@ -503,8 +504,9 @@ const char * systemState( void )
 	dbgPrint("       resp[2]: %x\n", resp[4]);
 	dbgPrint("MSB -> resp[3]: %x\n", resp[5]);
 	*/
-
-	return getStateValues(resp);
+	char muh[1024] = "";
+	getStateValues(resp, muh);
+	return muh;
 
 	if ( status != E_SUCCESS )
 	{

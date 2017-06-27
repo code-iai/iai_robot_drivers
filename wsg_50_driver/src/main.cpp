@@ -150,8 +150,9 @@ void timer_cb(const ros::TimerEvent& ev)
 	} else if (!std::isnan(g_goal_speed)) {
 		ROS_INFO("Velocity command: speed=%5.1f", g_goal_speed);
         res = script_measure_move(2, 0, g_goal_speed, info);
-	} else
+	} else {
         res = script_measure_move(0, 0, 0, info);
+    }
 	if (!std::isnan(g_goal_position))
 		g_goal_position = NAN;
 	if (!std::isnan(g_goal_speed))
@@ -280,7 +281,6 @@ int main( int argc, char **argv )
         std::thread th;
         ros::Timer tmr;
         tmr = nh.createTimer(ros::Duration(1.0/rate), timer_cb);
-
         ros::spin();
 
 	} else {
