@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   iai_wsg_50_msgs
 )
 
+catkin_python_setup()
 
 
 
