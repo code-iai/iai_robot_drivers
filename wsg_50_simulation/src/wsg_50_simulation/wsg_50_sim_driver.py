@@ -43,12 +43,9 @@ class WSG50SimDriver(object):
         if move_cmd.position[0] < self.js.position[self.link_id]:
             move_cmd.velocity = [x * -1 for x in move_cmd.velocity]
         rate = rospy.Rate(10)
-        print(move_cmd)
-        print(self.js.position[self.link_id])
         start_time = rospy.get_rostime()
         while not rospy.is_shutdown() and abs(self.js.position[self.link_id] - move_cmd.position[0]) > .007:
             self.boxy_cmd.publish(move_cmd)
-            print(abs(self.js.position[self.link_id] - move_cmd.position[0]))
             rate.sleep()
             if rospy.get_rostime() - start_time > rospy.Duration(10):
                 rospy.logwarn('movement tool too long, stopping.')
