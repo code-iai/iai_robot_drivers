@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import rospy
 from iai_wsg_50_msgs.msg._PositionCmd import PositionCmd
 from iai_wsg_50_msgs.msg._Status import Status
@@ -8,10 +9,7 @@ from std_msgs.msg._Bool import Bool
 class WSG50SimDriver(object):
     def __init__(self, gripper_name):
         self.js = None
-        if gripper_name is None:
-            self.gripper_name = 'left_gripper_joint'
-        else:
-            self.gripper_name = gripper_name
+        self.gripper_name = gripper_name
         self.link_id = None
 
         self.moving_pub = rospy.Publisher('~moving', Bool, queue_size=10)
@@ -58,7 +56,8 @@ class WSG50SimDriver(object):
 
 
 if __name__ == '__main__':
-    rospy.init_node('wsg_50_sim_driver')
-    node = WSG50SimDriver(None)
-    print('running')
+    rospy.init_node("wsg_50_sim_driver")
+    gripper_joint_name = rospy.get_param('~gripper_joint_name', default='left_gripper_joint')
+    node = WSG50SimDriver(gripper_joint_name)
+    rospy.loginfo("kms 50 sim driver for '{}' joint running.".format(gripper_joint_name))
     rospy.spin()
