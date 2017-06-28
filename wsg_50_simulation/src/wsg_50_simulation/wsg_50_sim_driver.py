@@ -40,12 +40,19 @@ class WSG50SimDriver(object):
         move_cmd.name = [self.gripper_name]
         move_cmd.position = [data.pos / multiplier]
         move_cmd.velocity = [abs(data.speed) / multiplier]
-        if data.pos < self.js.position[self.link_id]:
+        if move_cmd.position[0] < self.js.position[self.link_id]:
             move_cmd.velocity = [x * -1 for x in move_cmd.velocity]
         rate = rospy.Rate(10)
+        print(move_cmd)
+        print(self.js.position[self.link_id])
+        start_time = rospy.get_rostime()
         while not rospy.is_shutdown() and abs(self.js.position[self.link_id] - move_cmd.position[0]) > .007:
             self.boxy_cmd.publish(move_cmd)
+            print(abs(self.js.position[self.link_id] - move_cmd.position[0]))
             rate.sleep()
+            if rospy.get_rostime() - start_time > rospy.Duration(10):
+                rospy.logwarn('movement tool too long, stopping.')
+                break
         rospy.loginfo('done.')
 
     def goal_speed_cb(self, data):
