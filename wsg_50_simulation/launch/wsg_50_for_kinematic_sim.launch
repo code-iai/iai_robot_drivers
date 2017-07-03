@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <launch>
 
-  <node name="wsg_50_sim_driver_right" pkg="wsg_50_simulation" type="wsg_50_sim_driver.py" output="screen" >
+  <node name="right_arm_gripper" pkg="wsg_50_simulation" type="wsg_50_sim_driver.py" output="screen" >
     <param name='gripper_joint_name' type='string' value='right_gripper_joint'/>
   </node>
-  <node name="wsg_50_sim_driver_left" pkg="wsg_50_simulation" type="wsg_50_sim_driver.py" output="screen" >
+  <node name="left_arm_gripper" pkg="wsg_50_simulation" type="wsg_50_sim_driver.py" output="screen" >
     <param name='gripper_joint_name' type='string' value='left_gripper_joint'/>
   </node>
 
