@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import rospy
+from iai_naive_kinematics_sim.srv._SetJointState import SetJointState, SetJointStateRequest
 from iai_wsg_50_msgs.msg._PositionCmd import PositionCmd
 from iai_wsg_50_msgs.msg._Status import Status
 from sensor_msgs.msg._JointState import JointState
@@ -19,6 +20,8 @@ class WSG50SimDriver(object):
         self.joint_state_sub = rospy.Subscriber('joint_states', JointState, self.js_cb, queue_size=10)
         self.goal_pose_sub = rospy.Subscriber('~goal_position', PositionCmd, self.goal_pose_cb, queue_size=10)
         self.goal_speed_sub = rospy.Subscriber('~goal_speed', PositionCmd, self.goal_speed_cb, queue_size=10)
+
+        self.boxy_joint_state = rospy.ServiceProxy('/boxy/set_joint_states', SetJointState)
 
     def js_cb(self, data):
         if self.link_id is None:
@@ -48,8 +51,15 @@ class WSG50SimDriver(object):
             self.boxy_cmd.publish(move_cmd)
             rate.sleep()
             if rospy.get_rostime() - start_time > rospy.Duration(10):
-                rospy.logwarn('movement tool too long, stopping.')
+                rospy.logwarn('movement took too long, stopping.')
                 break
+        move_cmd.velocity = [0.0 for _ in move_cmd.velocity]
+        move_cmd.effort = [0.0 for _ in move_cmd.velocity]
+        srv_cmd = SetJointStateRequest()
+        srv_cmd.state = move_cmd
+        # print('send {}'.format(srv_cmd))
+        self.boxy_joint_state.call(srv_cmd)
+        # self.boxy_joint_state(srv_cmd)
         rospy.loginfo('done.')
 
     def goal_speed_cb(self, data):
@@ -60,7 +70,7 @@ class WSG50SimDriver(object):
 
 
 if __name__ == '__main__':
-    rospy.init_node("wsg_50_sim_driver")
+    rospy.init_node("left_arm_gripper")
     gripper_joint_name = rospy.get_param('~gripper_joint_name', default='left_gripper_joint')
     node = WSG50SimDriver(gripper_joint_name)
     rospy.loginfo("kms 50 sim driver for '{}' joint running.".format(gripper_joint_name))
