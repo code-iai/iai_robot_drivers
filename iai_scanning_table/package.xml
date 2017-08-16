@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package>
+  <name>iai_scanning_table</name>
+  <version>0.0.0</version>
+  <description>Driver for the IAI turning table</description>
+
+  <maintainer email="amaldo@cs.uni-bremen.de">Alexis Maldonado</maintainer>
+
+  <license>gplv3+</license>
+
+  <author email="amaldo@cs.uni-bremen.de">Alexis Maldonado</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <run_depend>sensor_msgs</run_depend>
+  <run_depend>iai_scanning_table_msgs</run_depend>
+  <run_depend>rospy</run_depend>
+  <run_depend>actionlib</run_depend>
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+  </export>
+</package>
