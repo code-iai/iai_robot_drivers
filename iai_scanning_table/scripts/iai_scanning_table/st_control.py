@@ -70,6 +70,10 @@ class ElmoUdp(object):
         self.last_acceleration = 0
         self.comm_lock = threading.Lock()
         self.time_at_target = 0
+        self.last_valid_enc_ticks = 0
+        self.last_valid_vel_ticks = 0
+        self.last_valid_current = 0.0
+        
 
     def __del__(self):
         """Turn all controllers off (no more current) when exiting"""
@@ -179,7 +183,7 @@ class ElmoUdp(object):
         self.sendcmd("mo=0")  # make sure motor is disabled (needed for changing UM Unit Mode)
         self.sendcmd("um=5")  # position mode
         self.sendcmd("mo=1")  # activate the motor
-
+        
         time.sleep(0.5)  # some time for it to find the conmutation
 
         waiting = True
@@ -269,7 +273,7 @@ class ElmoUdp(object):
 
     def clear_cache(self):
         """Read from the UDP socket until it times out, discarding the data"""
-        self.s.settimeout(0.1)
+        self.s.settimeout(0.2)
 
         try:
             while (True):
@@ -333,21 +337,44 @@ class ElmoUdp(object):
         """Read PX (Main Position in counts) and
            convert the encoder ticks to radians of the turning table
         """
-        enc_ticks = int(self.sendcmd("PX"))
+        enc_ticks = 0
+        try:
+            enc_ticks = int(self.sendcmd("PX"))
+            self.last_valid_enc_ticks = enc_ticks
+        except:
+            print("Could not read encoder angle")
+            enc_ticks = self.last_valid_enc_ticks
+            
+            
         return (enc_ticks * ENCODER_TO_TABLE_ANGLE)
 
     def get_encoder_velocity(self):
         """Read VX (Main encoder velocity in counts) and
            convert the encoder ticks to radians of the turning table
         """
-        enc_ticks = int(self.sendcmd("VX"))
-        return (enc_ticks * ENCODER_TO_TABLE_ANGLE)
+        vel_ticks = 0
+        try:
+            vel_ticks = int(self.sendcmd("VX"))
+            self.last_valid_vel_ticks = vel_ticks
+        except:
+            print("Could not read encoder velocity")
+            vel_ticks = self.last_valid_enc_ticks
+            
+        return (vel_ticks * ENCODER_TO_TABLE_ANGLE)
 
     def get_active_current(self):
         """Read IQ (active current in amps)
         """
-        return float(self.sendcmd("IQ"))
-
+        current = 0.0
+        
+        try:
+            current =  float(self.sendcmd("IQ"))
+            self.last_valid_current = current
+        except:
+            print("Could not read current")
+            current = self.last_valid_current
+        
+        return current
 
 
 
