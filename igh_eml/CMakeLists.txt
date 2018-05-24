@@ -12,21 +12,21 @@ ExternalProject_Add(upstream_igh_eml    # Name for custom target
   #HG_REPOSITORY http://hg.code.sf.net/p/etherlabmaster/code         # URL of mercurial repo
   #HG_TAG f5ffd1875da1                # Mercurial branch name, commit id or tag
   #Switch to a UniBremen mirror of the upstream igh code (faster than sourceforge)
-  #GIT_REPOSITORY https://gitlab.informatik.uni-bremen.de/amaldo/igh_eml_upstream_clone.git
+  GIT_REPOSITORY https://gitlab.informatik.uni-bremen.de/amaldo/igh_eml_upstream_clone.git
   #The following TAG should correspond to the same version as your installed kernel modules
-  #GIT_TAG d598ab86741cc7b60b3a169a1cee06b24dd83f89
-  GIT_REPOSITORY https://github.com/amaldo/Etherlab_EtherCAT_Master.git
-  GIT_TAG a3413fd8044fe10723602601417397c8524567ab
+  GIT_TAG d31eebb51ddb41acb6477e7a6b7319606a3baf15
+  #GIT_REPOSITORY https://github.com/amaldo/Etherlab_EtherCAT_Master.git
+  #GIT_TAG a3413fd8044fe10723602601417397c8524567ab
   TIMEOUT 30           # Time allowed for file download operations
 # #--Update/Patch step----------
   UPDATE_COMMAND touch <SOURCE_DIR>/config.h COMMAND mkdir -p <SOURCE_DIR>/include <SOURCE_DIR>/lib    # Source work-tree update command
 # #--Configure step-------------
-  CONFIGURE_COMMAND touch <SOURCE_DIR>/ChangeLog COMMAND autoreconf -i <SOURCE_DIR> COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --disable-kernel --enable-hrtimer --enable-tool --enable-ethercat_wrapper # Build tree configuration command
+  CONFIGURE_COMMAND touch <SOURCE_DIR>/ChangeLog COMMAND autoreconf -i <SOURCE_DIR> COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --disable-kernel --enable-hrtimer --enable-tool  # Build tree configuration command
 # #--Build step-----------------
   BUILD_IN_SOURCE 1         # Use source dir for build dir
 # #--Install step---------------
   INSTALL_DIR ${CATKIN_DEVEL_PREFIX}           # Installation prefix
-  BUILD_COMMAND cd <SOURCE_DIR> COMMAND make
+  BUILD_COMMAND cd <SOURCE_DIR> COMMAND make -j8
   )
 
 add_library(ethercat SHARED IMPORTED)
