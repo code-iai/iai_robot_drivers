@@ -21,11 +21,12 @@ ExternalProject_Add(upstream_igh_eml    # Name for custom target
 # #--Update/Patch step----------
   UPDATE_COMMAND touch <SOURCE_DIR>/config.h COMMAND mkdir -p <SOURCE_DIR>/include <SOURCE_DIR>/lib    # Source work-tree update command
 # #--Configure step-------------
-  CONFIGURE_COMMAND touch <SOURCE_DIR>/ChangeLog COMMAND autoreconf -i <SOURCE_DIR> COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --disable-kernel --enable-hrtimer --enable-tool --disable-ethercat_wrapper # Build tree configuration command
+  CONFIGURE_COMMAND touch <SOURCE_DIR>/ChangeLog COMMAND autoreconf -i <SOURCE_DIR> COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --disable-kernel --enable-hrtimer --enable-tool --enable-ethercat_wrapper # Build tree configuration command
 # #--Build step-----------------
   BUILD_IN_SOURCE 1         # Use source dir for build dir
 # #--Install step---------------
   INSTALL_DIR ${CATKIN_DEVEL_PREFIX}           # Installation prefix
+  BUILD_COMMAND cd <SOURCE_DIR> COMMAND make
   )
 
 add_library(ethercat SHARED IMPORTED)
