@@ -108,6 +108,11 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(D
 
   //Only looking for the info on one joint from the giskard message
   joint_name_to_index_.insert(std::pair<std::string, unsigned int>("triangle_base_joint",0));
+  joint_name_to_index_.insert(std::pair<std::string, unsigned int>("odom_x_joint",1));
+  joint_name_to_index_.insert(std::pair<std::string, unsigned int>("odom_y_joint",2));
+  joint_name_to_index_.insert(std::pair<std::string, unsigned int>("odom_z_joint",3));
+
+
   giskardCommand_reported_error = false;
 
 
@@ -202,9 +207,29 @@ void Omnidrive::giskardCommand(const sensor_msgs::JointState& msg)
 	  if (it != joint_name_to_index_.end()) {
 		  //the name is in my list
 		  unsigned int j = it->second;
-		  torso_des_vel_ = msg.velocity[i] * torso_ticks_to_m;
-		  //std::cout << "Assigned " << it->first << " value " << torso_des_vel_ << std::endl;
-		  received_one_valid_command = true;
+
+      if (j == 0) {
+        torso_des_vel_ = msg.velocity[i] * torso_ticks_to_m;
+        //std::cout << "Assigned " << it->first << " value " << torso_des_vel_ << std::endl;
+        received_one_valid_command = true;
+      } else if (j == 1) { //odom_x_joint
+        //command for odom_x_joint
+        drive_[0] = msg.velocity[i];
+        drive_[0] = -drive_[0];
+        received_one_valid_command = true;
+      } else if (j == 2) {  //odom_y_joint
+      //command for odom_x_joint
+      drive_[1] = msg.velocity[i];
+      drive_[1] = -drive_[1];
+      received_one_valid_command = true;
+      } else if (j == 3) { //odom_z_joint
+        //command for odom_x_joint
+        drive_[2] = msg.velocity[i];
+        drive_[2] = -drive_[2];
+        received_one_valid_command = true;
+      }
+
+
 	  }
 
   }
