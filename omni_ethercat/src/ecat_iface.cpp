@@ -378,7 +378,7 @@ int EcatAdmin::ecat_writeSDO(int slave_pos, int index, int subindex, int value, 
 	}
 
 	//Get the pointer as ecrt_master_sdo_download needs it
-	const uint8_t *data_addr = (const uint8_t*) &value;
+	uint8_t *data_addr = (uint8_t*) &value;
 
 	int ret = -1;
 	//Since this blocks forever if the cyclic_task is not running, we check first
@@ -611,8 +611,7 @@ void EcatAdmin::cyclic_ecat_task()
 
 	/* Send process data. */
 	ecrt_domain_queue(domain1);
-	size_t written_bytes = ecrt_master_send(ec_master);
-	//std::cout << "Wrote " << written_bytes << std::endl;
+	ecrt_master_send(ec_master);
 
 }
 
