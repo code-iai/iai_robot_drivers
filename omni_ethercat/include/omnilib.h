@@ -37,12 +37,12 @@ typedef struct {
 } commstatus_t;
 
 int omnidrive_init(void);
-int omnidrive_drive(double x, double y, double a, double torso_vel);
+int omnidrive_drive(double x, double y, double a);
 void omnidrive_set_correction(double drift);
-int omnidrive_odometry(double *x, double *y, double *a, double *torso_pos);
+int omnidrive_odometry(double *x, double *y, double *a);
 int omnidrive_shutdown(void);
 
-void omnidrive_status(char *drive0, char *drive1, char *drive2, char *drive3, char *drive4, int *estop); //added torso
+void omnidrive_status(char *drive0, char *drive1, char *drive2, char *drive3, int *estop); //added torso
 
 commstatus_t omnidrive_commstatus();
 

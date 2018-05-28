@@ -59,8 +59,8 @@ static ec_master_state_t master_state;// = { };
 static ec_domain_t *domain1 = NULL;
 static ec_domain_state_t domain1_state;// = { };
 
-static ec_slave_config_t *sc[NUM_DRIVES];// = { NULL, NULL, NULL, NULL, NULL};  //added torso
-static ec_slave_config_state_t sc_state[NUM_DRIVES];// = {{}, {}, {}, {}, {}};  //added torso
+static ec_slave_config_t *sc[NUM_DRIVES];// = { NULL, NULL, NULL, NULL}; 
+static ec_slave_config_state_t sc_state[NUM_DRIVES];// = {{}, {}, {}, {}};
 
 static char prevent_set_position = 0;
 
@@ -161,84 +161,68 @@ static const ec_pdo_entry_reg_t domain1_regs[] = {
     {M1SlavePos,  ELMOG, 0x607A, 0x00, &off_target_position[1]},
     {M2SlavePos,  ELMOG, 0x607A, 0x00, &off_target_position[2]},
     {M3SlavePos,  ELMOG, 0x607A, 0x00, &off_target_position[3]},
-    {M4SlavePos,  ELMOG, 0x607A, 0x00, &off_target_position[4]}, //torso
     {M0SlavePos,  ELMOG, 0x60FF, 0x00, &off_target_velocity[0]},
     {M1SlavePos,  ELMOG, 0x60FF, 0x00, &off_target_velocity[1]},
     {M2SlavePos,  ELMOG, 0x60FF, 0x00, &off_target_velocity[2]},
     {M3SlavePos,  ELMOG, 0x60FF, 0x00, &off_target_velocity[3]},
-    {M4SlavePos,  ELMOG, 0x60FF, 0x00, &off_target_velocity[4]}, //torso
     {M0SlavePos,  ELMOG, 0x6071, 0x00, &off_target_torque[0]},
     {M1SlavePos,  ELMOG, 0x6071, 0x00, &off_target_torque[1]},
     {M2SlavePos,  ELMOG, 0x6071, 0x00, &off_target_torque[2]},
     {M3SlavePos,  ELMOG, 0x6071, 0x00, &off_target_torque[3]},
-    {M4SlavePos,  ELMOG, 0x6071, 0x00, &off_target_torque[4]}, //torso
     {M0SlavePos,  ELMOG, 0x6072, 0x00, &off_max_torque[0]},
     {M1SlavePos,  ELMOG, 0x6072, 0x00, &off_max_torque[1]},
     {M2SlavePos,  ELMOG, 0x6072, 0x00, &off_max_torque[2]},
     {M3SlavePos,  ELMOG, 0x6072, 0x00, &off_max_torque[3]},
-    {M4SlavePos,  ELMOG, 0x6072, 0x00, &off_max_torque[4]}, //torso
     {M0SlavePos,  ELMOG, 0x6040, 0x00, &off_controlword[0]},
     {M1SlavePos,  ELMOG, 0x6040, 0x00, &off_controlword[1]},
     {M2SlavePos,  ELMOG, 0x6040, 0x00, &off_controlword[2]},
     {M3SlavePos,  ELMOG, 0x6040, 0x00, &off_controlword[3]},
-    {M4SlavePos,  ELMOG, 0x6040, 0x00, &off_controlword[4]},
     {M0SlavePos,  ELMOG, 0x6060, 0x00, &off_mode_of_operation[0]},
     {M1SlavePos,  ELMOG, 0x6060, 0x00, &off_mode_of_operation[1]},
     {M2SlavePos,  ELMOG, 0x6060, 0x00, &off_mode_of_operation[2]},
     {M3SlavePos,  ELMOG, 0x6060, 0x00, &off_mode_of_operation[3]},
-    {M4SlavePos,  ELMOG, 0x6060, 0x00, &off_mode_of_operation[4]},
     {M0SlavePos,  ELMOG, 0x6081, 0x00, &off_profile_velocity[0]},
     {M1SlavePos,  ELMOG, 0x6081, 0x00, &off_profile_velocity[1]},
     {M2SlavePos,  ELMOG, 0x6081, 0x00, &off_profile_velocity[2]},
     {M3SlavePos,  ELMOG, 0x6081, 0x00, &off_profile_velocity[3]},
-    {M4SlavePos,  ELMOG, 0x6081, 0x00, &off_profile_velocity[4]},
     {M0SlavePos,  ELMOG, 0x6083, 0x00, &off_profile_acceleration[0]},
     {M1SlavePos,  ELMOG, 0x6083, 0x00, &off_profile_acceleration[1]},
     {M2SlavePos,  ELMOG, 0x6083, 0x00, &off_profile_acceleration[2]},
     {M3SlavePos,  ELMOG, 0x6083, 0x00, &off_profile_acceleration[3]},
-    {M4SlavePos,  ELMOG, 0x6083, 0x00, &off_profile_acceleration[4]},
     {M0SlavePos,  ELMOG, 0x6084, 0x00, &off_profile_deceleration[0]},
     {M1SlavePos,  ELMOG, 0x6084, 0x00, &off_profile_deceleration[1]},
     {M2SlavePos,  ELMOG, 0x6084, 0x00, &off_profile_deceleration[2]},
     {M3SlavePos,  ELMOG, 0x6084, 0x00, &off_profile_deceleration[3]},
-    {M4SlavePos,  ELMOG, 0x6084, 0x00, &off_profile_deceleration[4]},
     {M0SlavePos,  ELMOG, 0x6084, 0x00, &off_digital_outputs[0]},
     {M1SlavePos,  ELMOG, 0x6084, 0x00, &off_digital_outputs[1]},
     {M2SlavePos,  ELMOG, 0x6084, 0x00, &off_digital_outputs[2]},
     {M3SlavePos,  ELMOG, 0x6084, 0x00, &off_digital_outputs[3]},
-    {M4SlavePos,  ELMOG, 0x6084, 0x00, &off_digital_outputs[4]},
 
     //From here are the PDOs for reading
     {M0SlavePos,  ELMOG, 0x6064, 0x00, &off_actual_position[0]},
     {M1SlavePos,  ELMOG, 0x6064, 0x00, &off_actual_position[1]},
     {M2SlavePos,  ELMOG, 0x6064, 0x00, &off_actual_position[2]},
     {M3SlavePos,  ELMOG, 0x6064, 0x00, &off_actual_position[3]},
-    {M4SlavePos,  ELMOG, 0x6064, 0x00, &off_actual_position[4]},
     {M0SlavePos,  ELMOG, 0x60FD, 0x00, &off_digital_inputs[0]},
     {M1SlavePos,  ELMOG, 0x60FD, 0x00, &off_digital_inputs[1]},
     {M2SlavePos,  ELMOG, 0x60FD, 0x00, &off_digital_inputs[2]},
     {M3SlavePos,  ELMOG, 0x60FD, 0x00, &off_digital_inputs[3]},
-    {M4SlavePos,  ELMOG, 0x60FD, 0x00, &off_digital_inputs[4]},
     {M0SlavePos,  ELMOG, 0x606C, 0x00, &off_actual_velocity[0]},
     {M1SlavePos,  ELMOG, 0x606C, 0x00, &off_actual_velocity[1]},
     {M2SlavePos,  ELMOG, 0x606C, 0x00, &off_actual_velocity[2]},
     {M3SlavePos,  ELMOG, 0x606C, 0x00, &off_actual_velocity[3]},
-    {M4SlavePos,  ELMOG, 0x606C, 0x00, &off_actual_velocity[4]},
     {M0SlavePos,  ELMOG, 0x6041, 0x00, &off_statusword[0]},
     {M1SlavePos,  ELMOG, 0x6041, 0x00, &off_statusword[1]},
     {M2SlavePos,  ELMOG, 0x6041, 0x00, &off_statusword[2]},
     {M3SlavePos,  ELMOG, 0x6041, 0x00, &off_statusword[3]},
-    {M4SlavePos,  ELMOG, 0x6041, 0x00, &off_statusword[4]},
     {M0SlavePos,  ELMOG, 0x6061, 0x00, &off_mode_of_operation_display[0]},
     {M1SlavePos,  ELMOG, 0x6061, 0x00, &off_mode_of_operation_display[1]},
     {M2SlavePos,  ELMOG, 0x6061, 0x00, &off_mode_of_operation_display[2]},
     {M3SlavePos,  ELMOG, 0x6061, 0x00, &off_mode_of_operation_display[3]},
-    {M4SlavePos,  ELMOG, 0x6061, 0x00, &off_mode_of_operation_display[4]},
     {M0SlavePos,  ELMOG, 0x6077, 0x00, &off_actual_torque[0]},
     {M1SlavePos,  ELMOG, 0x6077, 0x00, &off_actual_torque[1]},
     {M2SlavePos,  ELMOG, 0x6077, 0x00, &off_actual_torque[2]},
     {M3SlavePos,  ELMOG, 0x6077, 0x00, &off_actual_torque[3]},
-    {M4SlavePos,  ELMOG, 0x6077, 0x00, &off_actual_torque[4]},
     {}
 };
 
@@ -486,16 +470,6 @@ void cyclic_task()
 
 	}
 
-    //now for the torso:
-    const unsigned int TORSO_DRIVE_SEQ_=4;
-    tar.profile_velocity[TORSO_DRIVE_SEQ_] = 200000;
-    tar.profile_acceleration[TORSO_DRIVE_SEQ_] = 10000000;
-    tar.profile_deceleration[TORSO_DRIVE_SEQ_] = 10000000;
-
-    EC_WRITE_S32(domain1_pd + off_target_velocity[TORSO_DRIVE_SEQ_], tar.target_velocity[TORSO_DRIVE_SEQ_]  );
-    EC_WRITE_U32(domain1_pd + off_profile_velocity[TORSO_DRIVE_SEQ_], tar.profile_velocity[TORSO_DRIVE_SEQ_]);
-    EC_WRITE_U32(domain1_pd + off_profile_acceleration[TORSO_DRIVE_SEQ_], tar.profile_acceleration[TORSO_DRIVE_SEQ_]);    // 5000000
-    EC_WRITE_U32(domain1_pd + off_profile_deceleration[TORSO_DRIVE_SEQ_], tar.profile_deceleration[TORSO_DRIVE_SEQ_]);	//2000000 was smoothing out the jumpiness before
 
 	/* Send process data. */
 	ecrt_domain_queue(domain1);

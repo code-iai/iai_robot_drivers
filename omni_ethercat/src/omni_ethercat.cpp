@@ -98,7 +98,7 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(D
 
   odom_pub_ = n_.advertise<nav_msgs::Odometry>("/odom", 3);
 
-  js_pub_ = n_.advertise<sensor_msgs::JointState>("/torso/joint_states", 1);  //torso
+  js_pub_ = n_.advertise<sensor_msgs::JointState>("/joint_states", 1);  //torso
 
   for(int i=0; i < 3; i++) {
     drive_last_[i] = 0;
@@ -250,13 +250,12 @@ void Omnidrive::stateUpdate(diagnostic_updater::DiagnosticStatusWrapper &s)
 {
   int estop;
   char drive[5]; //+1 for torso
-  omnidrive_status(&drive[0], &drive[1], &drive[2], &drive[3], &drive[4], &estop);
+  omnidrive_status(&drive[0], &drive[1], &drive[2], &drive[3], &estop);
 
   bool operational = (drive[0] == '4' &&
                       drive[1] == '4' &&
                       drive[2] == '4' &&
                       drive[3] == '4' &&
-                      drive[4] == '4' &&
                       estop == 0);
 
   if(operational)
@@ -304,13 +303,12 @@ void Omnidrive::powerCommand(const iai_control_msgs::PowerState::ConstPtr& msg)
     printf("Received power command!\n");
     int estop;
     char drive[4];
-    omnidrive_status(&drive[0], &drive[1], &drive[2], &drive[3], &drive[4], &estop);
+    omnidrive_status(&drive[0], &drive[1], &drive[2], &drive[3], &estop);
 
     bool power_state = (drive[0] == '4' &&
                         drive[1] == '4' &&
                         drive[2] == '4' &&
                         drive[3] == '4' &&
-                        drive[4] == '4' &&
                         estop == 0);
                         
     printf("Power_state=%d    drive[0]=%d\n", power_state, drive[0]);
@@ -377,7 +375,7 @@ void Omnidrive::main()
 
   while(n_.ok()) {
 
-    omnidrive_odometry(&x, &y, &a, &torso_pos);
+    omnidrive_odometry(&x, &y, &a);
 
 
     //FIXME: Do we need a watchdog for the torso?
@@ -437,7 +435,7 @@ void Omnidrive::main()
     //if the watchdog was activated drive_[0-2] are 0.0
     //only call omnidrive_drive once in the loop
     //the last call will probably override the previous ones 
-    omnidrive_drive(drive_[0], drive_[1], drive_[2], torso_des_vel_);
+    omnidrive_drive(drive_[0], drive_[1], drive_[2]);
 
 
 
@@ -479,7 +477,7 @@ void Omnidrive::main()
     // in Boxy it is part of the state reported by the ELMO drives
     if(++runstop_publish_counter == runstop_send_rate) {
       int runstop=0;
-      omnidrive_status(0,0,0,0,0, &runstop);
+      omnidrive_status(0,0,0,0, &runstop);
       std_msgs::Bool msg;
       msg.data = (runstop != 0);
       hard_runstop_pub.publish(msg);

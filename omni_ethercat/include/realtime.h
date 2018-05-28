@@ -4,7 +4,7 @@
 
 /* If you change the interface in any way, increase OMNICOM_MAGIC_VERSION */
 #define OMNICOM_MAGIC_VERSION 1003
-#define NUM_DRIVES 5
+#define NUM_DRIVES 4
 
 #include <ecrt.h>  //part of igh's ethercat master
 

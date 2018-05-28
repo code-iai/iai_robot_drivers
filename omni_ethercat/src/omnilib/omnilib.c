@@ -45,21 +45,20 @@
 
 
 // Calculated for the APM-SC05-ADK9 motors with 8" HD AndyMark wheels
-double odometry_constant=626594.7934;  // in ticks/m
-double drive_constant=626594.7934;
+double odometry_constant=626594.7934/2.0;  // in ticks/m
+double drive_constant=626594.7934/2.0;
 double odometry_correction=1.0;
 //int max_tick_speed = 666666; // ticks/s : 4000 rpm/ 60s * 10000 ticks/rev
 int max_tick_speed = 833333; // ticks/s : 5000 rpm/ 60s * 10000 ticks/rev
 
 int odometry_initialized = 0;
-int32_t last_odometry_position[NUM_DRIVES]={0, 0, 0, 0, 0};
+int32_t last_odometry_position[NUM_DRIVES]={0, 0, 0, 0};
 double odometry[3] = {0, 0, 0};
 
 int status[NUM_DRIVES];
 commstatus_t commstatus;
 
 void omnidrive_speedcontrol();
-void configure_torso_drive();
 
 
 int omnidrive_init(void)
@@ -94,7 +93,6 @@ int omnidrive_init(void)
   }
 
   omnidrive_speedcontrol();
-  configure_torso_drive();
   omnidrive_recover();
   omnidrive_poweron();
 
@@ -105,7 +103,7 @@ int omnidrive_init(void)
 
 int omnidrive_shutdown(void)
 {
-  omnidrive_drive(0, 0, 0, 0);   /* SAFETY */  //FIXME: 0 as goal torso pos might be wrong
+  omnidrive_drive(0, 0, 0);   /* SAFETY */  
 
   omnidrive_poweroff();
 
@@ -189,7 +187,7 @@ void jac_inverse(double *in, double *out)
 }
 
 
-int omnidrive_drive(double x, double y, double a, double torso_vel)
+int omnidrive_drive(double x, double y, double a)
 {
   // speed limits for the robot
   double wheel_limit = 1.0 ;//0.8;  // a single wheel may drive this fast (m/s)
@@ -229,7 +227,6 @@ int omnidrive_drive(double x, double y, double a, double torso_vel)
     //tar.torque_set_value[i] = 0.0;
   }
 
-  tar.target_velocity[TORSO_DRIVE_SEQ] = torso_vel;
 
 
   /* Let the kernel know the velocities we want to set. */
@@ -243,7 +240,7 @@ void omnidrive_set_correction(double drift)
   odometry_correction = drift;
 }
 
-int omnidrive_odometry(double *x, double *y, double *a, double *torso_pos)
+int omnidrive_odometry(double *x, double *y, double *a)
 {
   omniread_t cur; /* Current velocities / torques / positions */
   int i;
@@ -299,7 +296,6 @@ int omnidrive_odometry(double *x, double *y, double *a, double *torso_pos)
   *x = odometry[0];
   *y = odometry[1];
   *a = odometry[2];
-  *torso_pos = (double)cur.position[TORSO_DRIVE_SEQ] / 10000000.0;
 
   return 0;
 }
@@ -328,10 +324,6 @@ int readSDO(int device, int objectNum)
 #define UINT32 5
 
 
-int writeSDO(int device, int objectNum, int value, int type)
-{
-    return(writeSDO_lib(device, objectNum, 0, value, type));
-}
 
 
 int writeSDO_old(int device, int objectNum, int value, int type)
@@ -381,6 +373,11 @@ int writeSDO_lib(int device, int index, int subindex, int value, int type)
 
 }
 
+int writeSDO(int device, int objectNum, int value, int type)
+{
+    return(writeSDO_lib(device, objectNum, 0, value, type));
+}
+
 void drive_status(char *drive, int index)
 {
   int i;
@@ -398,16 +395,15 @@ commstatus_t omnidrive_commstatus()
   return commstatus;
 }
 
-void omnidrive_status(char *drive0, char *drive1, char *drive2, char *drive3, char *drive4, int *estop)
+void omnidrive_status(char *drive0, char *drive1, char *drive2, char *drive3, int *estop)
 {
   drive_status(drive0, 0);
   drive_status(drive1, 1);
   drive_status(drive2, 2);
   drive_status(drive3, 3);
-  drive_status(drive4, 4); //torso
 
   if(estop)
-    *estop = 0x80 & (status[0] & status[1] & status[2] & status[3] & status[4]); //added one for the torso
+    *estop = 0x80 & (status[0] & status[1] & status[2] & status[3]); 
 }
 
 void omnidrive_recover()
@@ -416,7 +412,6 @@ void omnidrive_recover()
   writeSDO(1, 0x6040, 0x80, UINT16);
   writeSDO(2, 0x6040, 0x80, UINT16);
   writeSDO(3, 0x6040, 0x80, UINT16);
-  writeSDO(4, 0x6040, 0x80, UINT16);
 }
 
 void omnidrive_poweron()
@@ -425,19 +420,16 @@ void omnidrive_poweron()
   writeSDO(1, 0x6040, 0x06, UINT16);
   writeSDO(2, 0x6040, 0x06, UINT16);
   writeSDO(3, 0x6040, 0x06, UINT16);
-  writeSDO(4, 0x6040, 0x06, UINT16);  //torso
 
   writeSDO(0, 0x6040, 0x07, UINT16);
   writeSDO(1, 0x6040, 0x07, UINT16);
   writeSDO(2, 0x6040, 0x07, UINT16);
   writeSDO(3, 0x6040, 0x07, UINT16);
-  writeSDO(4, 0x6040, 0x07, UINT16);  //torso
 
   writeSDO(0, 0x6040, 0x0f, UINT16);
   writeSDO(1, 0x6040, 0x0f, UINT16);
   writeSDO(2, 0x6040, 0x0f, UINT16);
   writeSDO(3, 0x6040, 0x0f, UINT16);
-  writeSDO(4, 0x6040, 0x0f, UINT16);  //torso
 
 }
 
@@ -447,7 +439,6 @@ void omnidrive_poweroff()
   writeSDO(1, 0x6040, 0x00, UINT16);
   writeSDO(2, 0x6040, 0x00, UINT16);
   writeSDO(3, 0x6040, 0x00, UINT16);
-  writeSDO(4, 0x6040, 0x00, UINT16); //torso
 }
 
 void omnidrive_speedcontrol()
@@ -460,41 +451,6 @@ void omnidrive_speedcontrol()
 
 }
 
-void configure_torso_drive()
-{
-
-    //set the torso drive to velocity profile mode, and good default values
-	writeSDO(TORSO_DRIVE_SEQ, 0x6060, 3, INT8); //3 = Velocity profile mode
-
-
-	/*
-	//Old configuration for position control for the torso
-    writeSDO(TORSO_DRIVE_SEQ, 0x6081, 200000, UINT32);  //decent profile speed
-    writeSDO(TORSO_DRIVE_SEQ, 0x6083, 10000000, UINT32);  //profile acceleration
-    writeSDO(TORSO_DRIVE_SEQ, 0x6084, 10000000, UINT32);  //profile deceleration
-    writeSDO(TORSO_DRIVE_SEQ, 0x6085, 10000000, UINT32);  //quick stop deceleration
-    writeSDO(TORSO_DRIVE_SEQ, 0x6086, 0, INT16);  //motion profile type = 0
-    writeSDO(TORSO_DRIVE_SEQ, 0x6060, 1, INT8);  //mode of operation = 1 = profile position mode
-	*/
-
-}
-
-
-void start_home_torso_drive()
-{
-    //set the torso drive to velocity profile mode, and good default values
-    writeSDO_lib(TORSO_DRIVE_SEQ, 0x6099, 1, 200000, UINT32);     //home search speed
-    writeSDO_lib(TORSO_DRIVE_SEQ, 0x6099, 2, 20000, UINT32);      //home search slow speed
-    writeSDO_lib(TORSO_DRIVE_SEQ, 0x609A, 0, 10000000, UINT32);   //deceleration
-    writeSDO_lib(TORSO_DRIVE_SEQ, 0x6098, 0, 2, INT8);            //homing method
-    writeSDO_lib(TORSO_DRIVE_SEQ, 0x607C, 0, 0, INT32);           //home offset to zero
-    writeSDO_lib(TORSO_DRIVE_SEQ, 0x6060, 0, 6, INT8);            //mode of operation to 6 (homing)
-    writeSDO_lib(TORSO_DRIVE_SEQ, 0x6040, 0, 0x0f, UINT16);       //control word to 0x0f (bring up the drive)
-    writeSDO_lib(TORSO_DRIVE_SEQ, 0x6040, 0, 0x1f, UINT16);       //control word to 0x1f (start the homing)
-
-    //After the homing is finished, switch back to mode 1 (profiled position)
-    //writeSDO_lib(TORSO_DRIVE_SEQ, 0x6060, 0, 1, INT8);            //mode of operation to 1 (profiled position)
-}
 
 int homing_reached(int statusword)
 {
