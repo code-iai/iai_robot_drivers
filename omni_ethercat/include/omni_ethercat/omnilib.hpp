@@ -154,7 +154,7 @@ namespace omni_ethercat
 
   inline Twist2d limitTwist(const Twist2d& twist, const Twist2d& max_twist)
   {
-    using Eigen::operator/;
+    //using Eigen::operator/;
 
     if (max_twist.array().cwiseEqual(0.0).count() > 0)
       throw std::runtime_error("At least one element of maximum twist equals 0.0.");

@@ -21,11 +21,12 @@
  */
 
 #include <omni_ethercat/ecat_iface.hpp>
+#include <ecrt.h>
 
 
 /*****************************************************************************/
 /* PDO index, subindex, size in bits */
-static ec_pdo_entry_info_t chosen_pdo_entries[] = {
+static ec_pdo_entry_info_t chosen_pdo_entries_old[] = {
 		/* Write */
 		{0x6084, 0x00, 32}, //these go in 0x1607  //profile decelaration uint32
 		{0x6083, 0x00, 32},                       //profile acceleration uint32
@@ -48,12 +49,41 @@ static ec_pdo_entry_info_t chosen_pdo_entries[] = {
 
 };
 
+/* PDO index, subindex, size in bits */
+static ec_pdo_entry_info_t chosen_pdo_entries[] = {
+        /* Write */
+        {0x607a, 0x00, 32}, //these go in 0x1605     //target position int32
+        {0x60ff, 0x00, 32},                          //target velocity int32
+        {0x6071, 0x00, 16},                          //target torque int16
+        {0x6072, 0x00, 16},                          //max torque int16
+        {0x6040, 0x00, 16},                          //control word uint16
+        {0x6060, 0x00, 8},                           //mode of operation int8
+        {0x6084, 0x00, 32}, //this one is in 0x1614  //profile decelaration uint32
+        {0x6083, 0x00, 32}, //this one is in 0x1613  //profile acceleration uint32
+        {0x6081, 0x00, 32}, //this one is in 0x1611  //profile velocity uint32
+        {0x60fe, 0x01, 32}, //this one is in 0x161D  //digital outputs uint32
+
+        /* Read */
+        {0x6064, 0x00, 32},   //these go in 0x1a03  //position actual value int32
+        {0x60fd, 0x00, 32},                         //digital inputs uint32
+        {0x606c, 0x00, 32},                         //velocity actual value  int32
+        {0x6041, 0x00, 16},                         //status word uint16
+        {0x6061, 0x00, 8},    //this is in 0x1A0B   //modes of operation display int8
+        {0x6077, 0x00, 16},   //this is in 0x1A13   //torque actual value int16  (unit is 1/1000 of rated torque)
+
+};
 
 /* PDO index, #entries, array of entries to map */
 static ec_pdo_info_t chosen_pdos[] = {
-		{0x1607, 4, chosen_pdo_entries + 0},
-		{0x1605, 6, chosen_pdo_entries + 4},
-		{0x1a07, 6, chosen_pdo_entries + 10},
+        {0x1605, 6, chosen_pdo_entries + 0},
+		{0x1614, 1, chosen_pdo_entries + 6},
+        {0x1613, 1, chosen_pdo_entries + 7},
+        {0x1611, 1, chosen_pdo_entries + 8},
+        {0x161D, 1, chosen_pdo_entries + 9},
+
+        {0x1a03, 4, chosen_pdo_entries + 10},
+		{0x1a0b, 1, chosen_pdo_entries + 14},
+        {0x1a13, 1, chosen_pdo_entries + 15},
 };
 
 
@@ -62,8 +92,8 @@ static ec_pdo_info_t chosen_pdos[] = {
 static ec_sync_info_t chosen_syncs[] = {
 		{0, EC_DIR_OUTPUT, 0, NULL, EC_WD_DISABLE},
 		{1, EC_DIR_INPUT , 0, NULL, EC_WD_DISABLE},
-		{2 /* SM2 */     , EC_DIR_OUTPUT,   2 /*# of PDOs*/, chosen_pdos + 0, EC_WD_ENABLE},
-		{3 /* SM3 */     , EC_DIR_INPUT ,   1              , chosen_pdos + 2, EC_WD_DISABLE},
+		{2 /* SM2 */     , EC_DIR_OUTPUT,   5 /*# of PDOs*/, chosen_pdos + 0, EC_WD_ENABLE},
+		{3 /* SM3 */     , EC_DIR_INPUT ,   3              , chosen_pdos + 5, EC_WD_DISABLE},
 		{0xff}
 };
 /*****************************************************************************/
@@ -99,7 +129,8 @@ void print_pdo_entry_reg(ec_pdo_entry_reg_t reg) {
 
 EcatAdmin::EcatAdmin(): rt_data_mutex(PTHREAD_MUTEX_INITIALIZER),
 		rt_should_exit(0), rt_misses(0), rt_thread(), ecat_cycle_counter(0), ec_domain_running(false),
-		finished_ecat_init_(false), cyclic_counter(0), realtime_cycle_period_ns(1e6) {
+		finished_ecat_init_(false), cyclic_counter(0), realtime_cycle_period_ns(1e6),
+    torso_present_(false) {
 
 	std::cout << "EcatAdmin()" << std::endl;
 	prepare_objects_for_slaves_on_boxy();
@@ -110,8 +141,10 @@ EcatAdmin::EcatAdmin(): rt_data_mutex(PTHREAD_MUTEX_INITIALIZER),
 int EcatAdmin::start_omni_realtime(){
 
 	std::cout << "start_omni_realtime()" << std::endl;
+    auto pdo_entry_regs = get_pdo_entry_regs_terminated();
 
-	if (!(ec_master = ecrt_request_master(0))) {
+
+    if (!(ec_master = ecrt_request_master(0))) {
 		std::cerr << "start_omni_realtime(): Could not request master 0" << std::endl;
 		goto out_return;
 	}
@@ -132,6 +165,9 @@ int EcatAdmin::start_omni_realtime(){
 			std::cerr << "start_omni_realtime(): Could not get slave configuration for Drive at bus position = " << drive->position_ << std::endl;
 			goto out_release_master;
 		}
+
+		//Do not need to reconfigure the PDOs, because the current mapping is the standard on
+	    // You need to call this if you are changing the content of any of the PDOs (0x1a07,0x1a08 and 0x1607 and 0x1608)
 		std::cout << "start_omni_realtime(): Configuring PDOs for motor at bus position = " << drive->position_ << std::endl;
 		/* slave config, sync manager index, index of the PDO to assign */
 		if (ecrt_slave_config_pdos(drive->sc, EC_END, chosen_syncs)) {
@@ -144,11 +180,12 @@ int EcatAdmin::start_omni_realtime(){
 	std::cout << "start_omni_realtime(): Registering PDO entries..." << std::endl;
 
 	//get_pdo_entry_regs_terminated() returns a  std::vector<ec_pdo_entry_reg_t>.
-	// but since the std::vector has contiguos memory storage, getting the address
+	// but since the std::vector has contiguous memory storage, getting the address
 	// to the first element is the same as the address of the ec_pdo_entry_reg_t array[] that is needed
 	// That array is also null terminated.
 
-	if (ecrt_domain_reg_pdo_entry_list(domain1, &(get_pdo_entry_regs_terminated()[0]))) {
+
+	if (ecrt_domain_reg_pdo_entry_list(domain1, &(pdo_entry_regs[0]))) {
 		std::cerr << "start_omni_realtime(): Could not register PDO entries." << std::endl;
 		goto out_release_master;
 	}
@@ -236,8 +273,9 @@ void EcatAdmin::realtime_main()
 		{
 			for (auto & drive_el: drive_map) {
 				auto & drive = drive_el.second;
-				drive->task_data_to_process();     //getting variables read from ECAT
-				drive->user_data_to_task_data();  //setting variables to be written to ECAT
+                drive->user_data_to_task_data();  //setting variables to be written to ECAT
+                //drive->task_data_to_process();     //getting variables read from ECAT
+                drive->task_data_to_user_data(); //copy to the user amaldo FIXME
 			}
 			pthread_mutex_unlock(&rt_data_mutex);
 		}
@@ -296,15 +334,18 @@ void EcatAdmin::check_drive_state(){
 
 		unsigned int controlword = 0x00;
 		unsigned int statusword = drive->task_rdata_user_side.statusword;
+		printf("drive %s: mode of operation disp: %04x\n", name.c_str(), drive->task_rdata_user_side.mode_of_operation_display);
+		printf("ControlWord[%s] = %04x\n", name.c_str(), drive->task_wdata_user_side.controlword);
 
 
-		//printf("StatusWord[%i] = 0x%04x = %d \n", i, statusword, statusword);
+		printf("StatusWord[%s] = 0x%04x = %d \n", name.c_str(), statusword, statusword);
 		if (statusword & (1 << STATUSWORD_FAULT_BIT)) {
 			printf("\e[31;1mm%s Has fault! <----------------\e[0m\n", name.c_str());
 		}
 
 		if (!(statusword & (1 << STATUSWORD_VOLTAGE_ENABLE_BIT))){
 			printf("\e[31;1mm%s Voltage not enabled! <----------------\e[0m\n", name.c_str());
+			printf("Status word: %04x\n", statusword);
 		}
 
 		//if (!(statusword & (1 << STATUSWORD_SWITCH_ON_DISABLED_BIT))){
@@ -678,14 +719,18 @@ void EcatAdmin::prepare_objects_for_slaves_on_boxy(){
 	std::shared_ptr<EcatELMODrive> slave_fl = std::make_shared<EcatELMODrive>(std::string("fl"), 0, 3, elmo_vendor_id, elmo_gold_whistle_product_id );
 	std::shared_ptr<EcatELMODrive> slave_br = std::make_shared<EcatELMODrive>(std::string("br"), 0, 0, elmo_vendor_id, elmo_gold_whistle_product_id );
 	std::shared_ptr<EcatELMODrive> slave_bl = std::make_shared<EcatELMODrive>(std::string("bl"), 0, 1, elmo_vendor_id, elmo_gold_whistle_product_id );
-	std::shared_ptr<EcatELMODrive> slave_torso = std::make_shared<EcatELMODrive>(std::string("torso"), 0, 4, elmo_vendor_id, elmo_gold_whistle_product_id );
+
+  if (torso_present_) {
+		std::shared_ptr<EcatELMODrive> slave_torso = std::make_shared<EcatELMODrive>(std::string("torso"), 0, 4, elmo_vendor_id, elmo_gold_whistle_product_id);
+		drive_map[slave_torso->name_] = slave_torso;
+	}
 
 	//drive_map holds all the slaves for easy global configuration
 	drive_map[slave_fl->name_] = slave_fl;
 	drive_map[slave_fr->name_] = slave_fr;
 	drive_map[slave_bl->name_] = slave_bl;
 	drive_map[slave_br->name_] = slave_br;
-	drive_map[slave_torso->name_] = slave_torso;
+
 
 }
 
@@ -693,7 +738,8 @@ void EcatAdmin::prepare_objects_for_slaves_on_boxy(){
 std::vector<ec_pdo_entry_reg_t> EcatAdmin::get_pdo_entry_regs_terminated() {
 	std::vector<ec_pdo_entry_reg_t> regs;
 	regs = get_pdo_entry_regs();
-	ec_pdo_entry_reg_t terminator;
+	//Important: The = {} makes sure it is initialized empty, without it, it is random RAM
+	ec_pdo_entry_reg_t terminator = {};
 	regs.push_back(terminator);
 	return(regs);
 }

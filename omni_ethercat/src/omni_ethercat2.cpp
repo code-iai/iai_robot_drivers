@@ -349,7 +349,12 @@ void Omnidrive::main()
 		ecat_admin.drive_map["fr"]->task_wdata_user_side.target_velocity = -1 * vels[1];
 		ecat_admin.drive_map["bl"]->task_wdata_user_side.target_velocity = vels[2];
 		ecat_admin.drive_map["br"]->task_wdata_user_side.target_velocity = -1 * vels[3];
-		ecat_admin.drive_map["torso"]->task_wdata_user_side.target_velocity = 0;
+		ecat_admin.drive_map["fl"]->task_wdata_user_side.profile_velocity = abs(vels[0]);
+		ecat_admin.drive_map["fr"]->task_wdata_user_side.profile_velocity = abs(-1 * vels[1]);
+		ecat_admin.drive_map["bl"]->task_wdata_user_side.profile_velocity = abs(vels[2]);
+		ecat_admin.drive_map["br"]->task_wdata_user_side.profile_velocity = abs(-1 * vels[3]);
+		
+		//ecat_admin.drive_map["torso"]->task_wdata_user_side.target_velocity = 0;
 
 
 		for (auto & drive_el: ecat_admin.drive_map) {

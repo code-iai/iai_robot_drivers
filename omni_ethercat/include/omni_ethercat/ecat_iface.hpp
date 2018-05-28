@@ -213,6 +213,7 @@ private:
 
 
 	unsigned int num_drives_;
+	bool torso_present_;
 
 
 	bool finished_ecat_init_;
