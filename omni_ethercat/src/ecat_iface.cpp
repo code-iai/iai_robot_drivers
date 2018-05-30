@@ -25,29 +25,6 @@
 
 
 /*****************************************************************************/
-/* PDO index, subindex, size in bits */
-static ec_pdo_entry_info_t chosen_pdo_entries_old[] = {
-		/* Write */
-		{0x6084, 0x00, 32}, //these go in 0x1607  //profile decelaration uint32
-		{0x6083, 0x00, 32},                       //profile acceleration uint32
-		{0x6081, 0x00, 32},                       //profile velocity uint32
-		{0x60fe, 0x01, 32},                       //digital outputs uint32
-		{0x607a, 0x00, 32}, //these go in 0x1605  //target position int32
-		{0x60ff, 0x00, 32},                       //target velocity int32
-		{0x6071, 0x00, 16},                       //target torque int16
-		{0x6072, 0x00, 16},                       //max torque int16
-		{0x6040, 0x00, 16},                       //control word uint16
-		{0x6060, 0x00, 8},                        //mode of operation int8
-
-		/* Read */
-		{0x6064, 0x00, 32},   //these go in 0x1a07  //position actual value int32
-		{0x60fd, 0x00, 32},                       //digital inputs uint32
-		{0x606c, 0x00, 32},                       //velocity actual value  int32
-		{0x6041, 0x00, 16},                       //status word uint16
-		{0x6061, 0x00, 8},                        //modes of operation display int8
-		{0x6077, 0x00, 16},                       //torque actual value int16  (unit is 1/1000 of rated torque)
-
-};
 
 /* PDO index, subindex, size in bits */
 static ec_pdo_entry_info_t chosen_pdo_entries[] = {
@@ -70,7 +47,7 @@ static ec_pdo_entry_info_t chosen_pdo_entries[] = {
         {0x6041, 0x00, 16},                         //status word uint16
         {0x6061, 0x00, 8},    //this is in 0x1A0B   //modes of operation display int8
         {0x6077, 0x00, 16},   //this is in 0x1A13   //torque actual value int16  (unit is 1/1000 of rated torque)
-
+        {0x1002, 0x00, 32},   //this is in 0x1a22   //ELMO status register
 };
 
 /* PDO index, #entries, array of entries to map */
@@ -84,6 +61,7 @@ static ec_pdo_info_t chosen_pdos[] = {
         {0x1a03, 4, chosen_pdo_entries + 10},
 		{0x1a0b, 1, chosen_pdo_entries + 14},
         {0x1a13, 1, chosen_pdo_entries + 15},
+        {0x1a22, 1, chosen_pdo_entries + 16},
 };
 
 
@@ -93,7 +71,7 @@ static ec_sync_info_t chosen_syncs[] = {
 		{0, EC_DIR_OUTPUT, 0, NULL, EC_WD_DISABLE},
 		{1, EC_DIR_INPUT , 0, NULL, EC_WD_DISABLE},
 		{2 /* SM2 */     , EC_DIR_OUTPUT,   5 /*# of PDOs*/, chosen_pdos + 0, EC_WD_ENABLE},
-		{3 /* SM3 */     , EC_DIR_INPUT ,   3              , chosen_pdos + 5, EC_WD_DISABLE},
+		{3 /* SM3 */     , EC_DIR_INPUT ,   4              , chosen_pdos + 5, EC_WD_DISABLE},
 		{0xff}
 };
 /*****************************************************************************/
@@ -311,8 +289,6 @@ void EcatAdmin::realtime_main()
 void EcatAdmin::check_drive_state(){
 	//This should be called around once a second to bring the drives up if something happens, like E-Stop
 
-	//TODO: Check if the E-Stop is pressed, then skip trying to get the drives up until that is solved
-
 	//After the EtherCAT communication is setup and PDOs are running (in OP mode), it is still necessary to enable the motor controller
 	// which involves reseting errors, enabling voltage, switching on, etc
 #define STATUSWORD_READY_TO_SWITCH_ON_BIT 0
@@ -334,54 +310,67 @@ void EcatAdmin::check_drive_state(){
 
 		unsigned int controlword = 0x00;
 		unsigned int statusword = drive->task_rdata_user_side.statusword;
-		printf("drive %s: mode of operation disp: %04x\n", name.c_str(), drive->task_rdata_user_side.mode_of_operation_display);
-		printf("ControlWord[%s] = %04x\n", name.c_str(), drive->task_wdata_user_side.controlword);
+		//printf("check_drive_state(): m[%s]: mode of operation disp: %04x\n", name.c_str(), drive->task_rdata_user_side.mode_of_operation_display);
+		//printf("check_drive_state(): m[%s]: ControlWord = %04x\n", name.c_str(), drive->task_wdata_user_side.controlword);
+
+#define ELMO_STATUS_REG_STO1_BIT 22   // was 14, but one byte seems to come at the end instead of the front
+#define ELMO_STATUS_REG_STO2_BIT 23   // was 15 in the documentation
+        //tested on CLI so: ethercat upload 0x1002 0 -p 0 -t uint32
+		bool sto_state = ((drive->task_rdata_user_side.elmo_status_register & (1 << ELMO_STATUS_REG_STO1_BIT)) &&
+				(drive->task_rdata_user_side.elmo_status_register & (1 << ELMO_STATUS_REG_STO2_BIT)));
+
+        //printf("check_drive_state(): m[%s]: sto_state = %i\n", name.c_str(), sto_state);
+		//printf("check_drive_state(): m[%s]: ELMO_STATUS_REG = 0x%08x\n", name.c_str(), drive->task_rdata_user_side.elmo_status_register);
+
+		if (sto_state == true) {
+			//STO lets the drives work
+
+			//printf("StatusWord[%s] = 0x%04x\n", name.c_str(), statusword);
+			if (statusword & (1 << STATUSWORD_FAULT_BIT)) {
+				printf("\e[31;1mcheck_drive_state(): m[%s]: Has fault! <----------------\e[0m\n", name.c_str());
+			}
+
+			if (!(statusword & (1 << STATUSWORD_VOLTAGE_ENABLE_BIT))) {
+				printf("\e[31;1mcheck_drive_state(): m[%s]: Voltage not enabled! <----------------\e[0m\n", name.c_str());
+			}
+
+			//if (!(statusword & (1 << STATUSWORD_SWITCH_ON_DISABLED_BIT))){
+			//	   printf("\e[31;1mm%s Switch_on_disabled_bit <----------------\e[0m\n", name.c_str());
+			//}
 
 
-		printf("StatusWord[%s] = 0x%04x = %d \n", name.c_str(), statusword, statusword);
-		if (statusword & (1 << STATUSWORD_FAULT_BIT)) {
-			printf("\e[31;1mm%s Has fault! <----------------\e[0m\n", name.c_str());
-		}
-
-		if (!(statusword & (1 << STATUSWORD_VOLTAGE_ENABLE_BIT))){
-			printf("\e[31;1mm%s Voltage not enabled! <----------------\e[0m\n", name.c_str());
-			printf("Status word: %04x\n", statusword);
-		}
-
-		//if (!(statusword & (1 << STATUSWORD_SWITCH_ON_DISABLED_BIT))){
-		//	   printf("\e[31;1mm%s Switch_on_disabled_bit <----------------\e[0m\n", name.c_str());
-		//}
-
-
-		if (!(statusword & (1 << STATUSWORD_OPERATION_ENABLE_BIT))) {
-			if (!(statusword & (1 << STATUSWORD_SWITCHED_ON_BIT))) {
-				if (!(statusword & (1 << STATUSWORD_READY_TO_SWITCH_ON_BIT))) {
-					if ((statusword & (1 << STATUSWORD_FAULT_BIT))) {
-						/* reset fault */
-						controlword = 	0x80;
-						printf("\e[31;1mm%s Reset fault <----------------\e[0m\n", name.c_str());
+			if (!(statusword & (1 << STATUSWORD_OPERATION_ENABLE_BIT))) {
+				if (!(statusword & (1 << STATUSWORD_SWITCHED_ON_BIT))) {
+					if (!(statusword & (1 << STATUSWORD_READY_TO_SWITCH_ON_BIT))) {
+						if ((statusword & (1 << STATUSWORD_FAULT_BIT))) {
+							/* reset fault */
+							controlword = 0x80;
+							printf("\e[31;1mcheck_drive_state(): m[%s]: Reset fault <----------------\e[0m\n", name.c_str());
+						} else {
+							/* shutdown */
+							controlword = 0x06;
+							printf("\e[31;1mcheck_drive_state(): m[%s]: Shutdown <----------------\e[0m\n", name.c_str());
+						}
 					} else {
-						/* shutdown */
-						controlword = 0x06;
-						printf("\e[31;1mm%s Shutdown <----------------\e[0m\n", name.c_str());
+						/* switch on */
+						controlword = 0x07;
+						printf("\e[31;1mcheck_drive_state(): m[%s]: Switch on <----------------\e[0m\n", name.c_str());
 					}
 				} else {
-					/* switch on */
-					controlword = 0x07;
-					printf("\e[31;1mm%s Switch on <----------------\e[0m\n", name.c_str());
+					/* enable operation */
+					printf("\e[31;mcheck_drive_state(): m[%s] EnableOperation <----------------\e[0m\n", name.c_str());
+					controlword = 0x0F;
 				}
 			} else {
-				/* enable operation */
-				printf("\e[31;mm%s EnableOperation <----------------\e[0m\n", name.c_str());
-				controlword = 0x0F;
+				// All is good, continue
+				controlword = 0x0f;
 			}
 		} else {
-			// All is good, continue
-			controlword = 0x0f;
+			printf("\e[31;mcheck_drive_state(): m[%s]: STO is blocking!\e[0m\n", name.c_str());
+			controlword = 0x00; // don't do anything
 		}
-
 		drive->task_wdata_user_side.controlword = controlword;
-		//std::cout << "controlword = 0x" << std::hex << controlword << std::dec << std::endl;
+		//std::cout << "check_drive_state(): m[" << name << "]: controlword = 0x" << std::hex << controlword << std::dec << std::endl;
 
 	}
 
@@ -606,44 +595,6 @@ void EcatAdmin::cyclic_ecat_task()
 		check_slave_config_states();
 	}
 
-	/* Write process data. */
-	/* Note: You _must_ write something, as this is how the drives sync. */
-
-	//	    //only feeding the wheel drives target velocity
-	//	    for (i = 0; i < 4; i++) {  //FIXME: Should be the same for all drives
-	//	        tar.profile_acceleration[i] = 5000000;
-	//	        tar.profile_deceleration[i] = 5000001;
-	//
-	//	        EC_WRITE_S32(domain1_pd + drives_[i]->pdata.w_target_velocity, tar.target_velocity[i]  );
-	//	        EC_WRITE_U32(domain1_pd + drives_[i]->pdata.w_profile_velocity, tar.profile_velocity[i]);
-	//	        //EC_WRITE_U16(domain1_pd + off_controlword[i], controlword);  //We are dealing with the control word before
-	//	        EC_WRITE_U32(domain1_pd + drives_[i]->pdata.w_profile_acceleration, tar.profile_acceleration[i]);    // 5000000
-	//	        EC_WRITE_U32(domain1_pd + drives_[i]->pdata.w_profile_deceleration, tar.profile_deceleration[i]);	//2000000 was smoothing out the jumpiness before
-	//
-	//		}
-
-	//	    //now for the torso:
-	//	    const unsigned int TORSO_DRIVE_SEQ_=4;
-	//	    tar.profile_velocity[TORSO_DRIVE_SEQ_] = 200000;
-	//	    tar.profile_acceleration[TORSO_DRIVE_SEQ_] = 10000000;
-	//	    tar.profile_deceleration[TORSO_DRIVE_SEQ_] = 10000000;
-	//
-	//	    EC_WRITE_S32(domain1_pd + drives_[TORSO_DRIVE_SEQ_]->pdata.w_target_position, tar.target_position[TORSO_DRIVE_SEQ_]);
-	//	    EC_WRITE_U32(domain1_pd + drives_[TORSO_DRIVE_SEQ_]->pdata.w_profile_velocity, tar.profile_velocity[TORSO_DRIVE_SEQ_]);
-	//	    EC_WRITE_U32(domain1_pd + drives_[TORSO_DRIVE_SEQ_]->pdata.w_profile_acceleration, tar.profile_acceleration[TORSO_DRIVE_SEQ_]);
-	//	    EC_WRITE_U32(domain1_pd + drives_[TORSO_DRIVE_SEQ_]->pdata.w_profile_deceleration, tar.profile_deceleration[TORSO_DRIVE_SEQ_]);
-
-
-	//	    //only send 0x3f on the rising edge of send_new_torso_pos
-	//	    if ( (tar.send_new_torso_pos == 1) && (old_send_new_torso_pos == 0 )) {
-	//	        printf("Sending 0x3f\n");
-	//		printf("Moving to %d\n", tar.target_position[TORSO_DRIVE_SEQ_]);
-	//	        EC_WRITE_U16(domain1_pd + off_controlword[TORSO_DRIVE_SEQ_], 0x3f);
-	//	    } else {
-	//	        EC_WRITE_U16(domain1_pd + off_controlword[TORSO_DRIVE_SEQ_], 0x0f);
-	//	    }
-
-
 	for (auto & drive_el: drive_map) {
 		auto & drive = drive_el.second;
 		drive->task_data_to_process(); //This calls EC_WRITE on all the variables
@@ -860,6 +811,7 @@ void EcatELMODrive::setup_variables() {
 	add_pdo_entry(0x6041, 0x0, &pdata_offsets.r_statusword, 0);
 	add_pdo_entry(0x6061, 0x0, &pdata_offsets.r_mode_of_operation_display, 0);
 	add_pdo_entry(0x6077, 0x0, &pdata_offsets.r_actual_torque, 0);
+	add_pdo_entry(0x1002, 0x0, &pdata_offsets.r_elmo_status_register, 0);
 
 }
 
@@ -873,6 +825,7 @@ void EcatELMODrive::process_to_task_data() {
 	task_rdata_process_side.statusword = EC_READ_U16(domain_pd_ + pdata_offsets.r_statusword);
 	task_rdata_process_side.mode_of_operation_display = EC_READ_S8(domain_pd_ + pdata_offsets.r_mode_of_operation_display);
 	task_rdata_process_side.actual_torque = EC_READ_S16(domain_pd_ + pdata_offsets.r_actual_torque);
+	task_rdata_process_side.elmo_status_register = EC_READ_U32(domain_pd_ + pdata_offsets.r_elmo_status_register);
 
 }
 

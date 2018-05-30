@@ -82,6 +82,7 @@ public:
 	unsigned int r_statusword;
 	unsigned int r_mode_of_operation_display;
 	unsigned int r_actual_torque;
+	unsigned int r_elmo_status_register;
 };
 
 //Registers we read from the drives
@@ -95,6 +96,7 @@ public:
 	uint16_t statusword;
 	int8_t mode_of_operation_display;
 	int16_t actual_torque;
+	uint32_t elmo_status_register;
 };
 
 

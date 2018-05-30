@@ -30,9 +30,7 @@
 #include <omni_ethercat/ecat_iface.hpp>  //library for interfacing with the Ethercat Motor drivers
 
 
-//For the torso:
 //#include <sensor_msgs/JointState.h>
-//#include <std_msgs/Float64.h>
 
 class Omnidrive
 {
@@ -94,15 +92,10 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(D
 	jac_params_ = omni_ethercat::JacParams(lx, ly, drive_constant);  // lx, ly, drive-constant in ticks/m
 
 
-	//std::cout << limited_twist_ << std::endl;
-
-
-
-
-	//for(int i=0; i < 3; i++) {
-	//  drive_last_[i] = 0;
-	//  drive_[i] = 0;
-	//}
+	for(int i=0; i < 3; i++) {
+	  drive_last_[i] = 0;
+	  drive_[i] = 0;
+	}
 
 	watchdog_time_ = ros::Time::now();
 }
@@ -138,21 +131,6 @@ void Omnidrive::cmdArrived(const geometry_msgs::TwistStamped::ConstPtr& msg)
 
 
 }
-
-//torso:
-//FIXME: need param to turn torso into velocity or position resolved
-//FIXME: All topics receiving commands need a watchdog, this one too
-
-//void Omnidrive::torsoCmdArrived(const std_msgs::Float64::ConstPtr& msg)
-//{
-//
-//  printf("Desired torso position: %f\n", msg->data);
-//  torso_des_pos_ = msg->data * torso_ticks_to_m;
-//  fresh_torso_des_pos_ = true;
-//
-//
-//}
-
 
 //void Omnidrive::stateUpdate(diagnostic_updater::DiagnosticStatusWrapper &s)
 //{
@@ -292,7 +270,7 @@ void Omnidrive::main()
 	while(n_.ok()) {
 
 		// Check if we need to enable the drives once a second
-		if ( ecat_admin.finished_ecat_init() && (ros::Time::now() - last_drive_check_time) > ros::Duration(1.0)) {
+		if ( ecat_admin.finished_ecat_init() && (ros::Time::now() - last_drive_check_time) > ros::Duration(0.1)) {
 			last_drive_check_time = ros::Time::now();
 			ecat_admin.check_drive_state();
 		}
@@ -353,7 +331,7 @@ void Omnidrive::main()
 		ecat_admin.drive_map["fr"]->task_wdata_user_side.profile_velocity = abs(-1 * vels[1]);
 		ecat_admin.drive_map["bl"]->task_wdata_user_side.profile_velocity = abs(vels[2]);
 		ecat_admin.drive_map["br"]->task_wdata_user_side.profile_velocity = abs(-1 * vels[3]);
-		
+
 		//ecat_admin.drive_map["torso"]->task_wdata_user_side.target_velocity = 0;
 
 
