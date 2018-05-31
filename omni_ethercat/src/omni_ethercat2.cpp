@@ -1,7 +1,7 @@
 /*
  * This file is part of the omni_ethercat project.
  *
- * Copyright (C) 2012-2016 Alexis Maldonado Herrera <amaldo@cs.uni-bremen.de>
+ * Copyright (C) 2012-2018 Alexis Maldonado Herrera <amaldo@cs.uni-bremen.de>
  * Copyright (C) 2009-2012 Ingo Kresse <kresse@in.tum.de>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,11 +21,8 @@
 #include <ros/ros.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/Twist.h>
-#include <geometry_msgs/Vector3.h>
 #include <soft_runstop/Handler.h>
-#include <tf/transform_broadcaster.h>
 #include <diagnostic_updater/diagnostic_updater.h>
-//#include <iai_control_msgs/PowerState.h>
 #include <omni_ethercat/omnilib.hpp>   //library for the mecanum kinematics
 #include <omni_ethercat/ecat_iface.hpp>  //library for interfacing with the Ethercat Motor drivers
 #include <sensor_msgs/JointState.h>
@@ -35,18 +32,12 @@ class Omnidrive
 private:
 	ros::NodeHandle n_;
 	diagnostic_updater::Updater diagnostic_;
-	//ros::Publisher current_pub_;
-	//ros::Publisher power_pub_;
 	ros::Publisher js_pub_; //joint_states
-	//ros::Subscriber power_sub_;
 	ros::Time watchdog_time_;
 	soft_runstop::Handler soft_runstop_handler_;
 	std::string odom_frame_id_;
 	std::string odom_child_frame_id_;
-	//std::string power_name_;
 	void cmdArrived(const geometry_msgs::TwistStamped::ConstPtr& msg);
-	//void stateUpdate(diagnostic_updater::DiagnosticStatusWrapper &s);
-	//void powerCommand(const iai_control_msgs::PowerState::ConstPtr& msg);
 
 	//Variables to hold the desired twist
 	omni_ethercat::Twist2d des_twist_;
@@ -63,14 +54,9 @@ public:
 Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(Duration(0.5))
 {
 	//diagnostic_.setHardwareID("omnidrive");
-	//diagnostic_.add("Base", this, &Omnidrive::stateUpdate);
+	//diagnostic_.add("Base", this, &Omnidrive::stateUpdate); //FIXME: populate and publish diagnostics
 	n_.param("odom_frame_id", odom_frame_id_, std::string("/odom"));
 	n_.param("odom_child_frame_id", odom_child_frame_id_, std::string("/base_footprint"));
-	//n_.param("power_name", power_name_, std::string("Wheels"));
-
-
-	//power_pub_ = n_.advertise<iai_control_msgs::PowerState>("/power_state", 1);
-	//power_sub_ = n_.subscribe<iai_control_msgs::PowerState>("/power_command", 16, &Omnidrive::powerCommand, this);
 
 	js_pub_ = n_.advertise<sensor_msgs::JointState>("/base/joint_states", 1);
 
@@ -120,107 +106,17 @@ void Omnidrive::cmdArrived(const geometry_msgs::TwistStamped::ConstPtr& msg)
 
 }
 
-//void Omnidrive::stateUpdate(diagnostic_updater::DiagnosticStatusWrapper &s)
-//{
-//  int estop;
-//  char drive[5]; //+1 for torso
-//  omnidrive_status(&drive[0], &drive[1], &drive[2], &drive[3], &drive[4], &estop);
-//
-//  bool operational = (drive[0] == '4' &&
-//                      drive[1] == '4' &&
-//                      drive[2] == '4' &&
-//                      drive[3] == '4' &&
-//                      drive[4] == '4' &&
-//                      estop == 0);
-//
-//  if(operational)
-//    s.summary(0, "Operational");
-//  else
-//    s.summary(1, "Down");
-//  
-//  for(int i=0; i < num_drives; i++)
-//    s.add(std::string("status drive ") + (char) ('1' + i),
-//          std::string("") + drive[i]);
-//  s.add("Emergency Stop", (estop) ? "== pressed ==" : "released");
-//
-//  commstatus_t comm = omnidrive_commstatus();
-//
-//  for(int i=0; i < num_drives; i++)
-//    s.addf(std::string("comm status drive ")+(char) ('1' + i),
-////    s.addf("cstatus drive",
-//           "0x%02X, %s, %s operational",
-//             comm.slave_state[i],
-//             comm.slave_online[i] ? "online" : "offline",
-//             comm.slave_operational[i] ? "" : "not");
-//
-//  s.addf("master state", "Link is %s, %d slaves, AL states: 0x%02X",
-//           comm.master_link ? "up" : "down",
-//           comm.master_slaves_responding,
-//           comm.master_al_states);
-//
-//  s.addf("working counter", "%d, %s",
-//           comm.working_counter,
-//           comm.working_counter_state == 2 ? "complete" : "incomplete");
-//
-//  iai_control_msgs::PowerState power;
-//  power.name = power_name_;
-//  power.enabled = operational;
-//
-//  power_pub_.publish(power);
-//}
-
-
-////FIXME: Do we need this for this base? This allows to bring the ethercat drives down and up at wish
-//void Omnidrive::powerCommand(const iai_control_msgs::PowerState::ConstPtr& msg)
-//{
-//  if(msg->name == power_name_)
-//  {
-//    printf("Received power command!\n");
-//    int estop;
-//    char drive[4];
-//    omnidrive_status(&drive[0], &drive[1], &drive[2], &drive[3], &drive[4], &estop);
-//
-//    bool power_state = (drive[0] == '4' &&
-//                        drive[1] == '4' &&
-//                        drive[2] == '4' &&
-//                        drive[3] == '4' &&
-//                        drive[4] == '4' &&
-//                        estop == 0);
-//                        
-//    printf("Power_state=%d    drive[0]=%d\n", power_state, drive[0]);
-//
-//    if(msg->enabled == true && power_state == false)
-//    {
-//      printf("Recovering\n");
-//      omnidrive_recover();
-//      omnidrive_poweron();
-//    }
-//
-//    if(msg->enabled == false && power_state == true)
-//    {
-//      printf("Turning off\n");
-//      omnidrive_poweroff();
-//    }
-//    
-//  }
-//}
-
 void Omnidrive::main()
 {
-	double speed, acc_max, t, radius, drift;
+    double watchdog_period_param;
 	int tf_frequency, runstop_frequency, js_frequency;
 	const int loop_frequency = 250; // 250Hz update frequency
-
-	//n_.param("speed", speed, 100.0); // 0.1
-	// default acc: brake from max. speed to 0 within 1.5cm
-	//n_.param("acceleration", acc_max, 1000.0);  //0.5*speed*speed/0.015
 
 	n_.param("tf_frequency", tf_frequency, 50);
 	n_.param("js_frequency", js_frequency, 125);
 	n_.param("runstop_frequency", runstop_frequency, 10);
-	n_.param("watchdog_period", t, 0.15);
-	ros::Duration watchdog_period(t);
-	n_.param("odometry_correction", drift, 1.0);
+	n_.param("watchdog_period", watchdog_period_param, 0.15);
+	ros::Duration watchdog_period(watchdog_period_param);
 
 
 
@@ -271,6 +167,7 @@ void Omnidrive::main()
 		}
 
 
+		//Calculate odometry
 		ros::Time time_of_odom = ros::Time::now();
 		omni_ethercat::OmniEncPos current_encoder_data;
 		current_encoder_data = {double(ecat_admin.drive_map["fl"]->task_rdata_user_side.actual_position),
@@ -286,9 +183,6 @@ void Omnidrive::main()
         //std::cout << "encoder diff: " << double(encoder_diff[0]) << " " << encoder_diff[1] << " " << encoder_diff[2] << " " << encoder_diff[3] << " " << std::endl;
         old_encoder_data = current_encoder_data;
 
-        //omnidrive_odometry(&x, &y, &a, &torso_pos);
-
-        //calculate odometry
 
 
 		//The watchdog for the /cmd_vel topic
@@ -310,6 +204,7 @@ void Omnidrive::main()
 		}
 
 
+		// Do the Inverse Kinematics: Desired base twist -> 4 wheel velocities
 		//This is a Vector holding 4 velocities, in this order of wheels: fl, fr, bl, br.
 		//The wheel axes are chosen such that if the base is moving forward as a whole, all of them have positive rotations
 		// imagine all wheels with the rotational axis pointing to the left (right-hand-rule)
@@ -319,6 +214,7 @@ void Omnidrive::main()
 		static omni_ethercat::Twist2d old_twist;
 		static omni_ethercat::OmniEncVel old_vels;
 
+		//print if there is a new commanded velocity
 		if (old_twist != limited_twist_) {
 			old_twist = limited_twist_;
 			std::cout << "Commanded twist: " << limited_twist_ << std::endl;
@@ -383,31 +279,6 @@ void Omnidrive::main()
         }
 
 
-		// publish odometry readings
-		//    if(++tf_publish_counter == tf_send_rate) {
-		//      tf::Quaternion q;
-		//      q.setRPY(0, 0, a);
-		//      tf::Transform pose(q, tf::Point(x, y, 0.0));
-		//      // FIXME: publish this on a separate topic like /base/odom
-		//      transforms.sendTransform(tf::StampedTransform(pose, ros::Time::now(), frame_id_, child_frame_id_));
-		//      // FIXME: publish actual base twist on topic like /base/vel
-		//      tf_publish_counter = 0;
-		//    }
-		//
-		//
-		//    // publish torso position
-		//    if(++js_publish_counter == js_send_rate) {
-		//      sensor_msgs::JointState msg;
-		//      msg.header.stamp = ros::Time::now();
-		//      msg.name.push_back("triangle_base_joint");
-		//      msg.position.push_back(torso_pos);
-		//      // FIXME: report the actual values
-		//      msg.velocity.push_back(0.0);
-		//      msg.effort.push_back(0.0);
-		//      js_pub_.publish(msg);
-		//      js_publish_counter = 0;
-		//    }
-		//
 		//    // publish hard runstop state
 		//    // FIXME: report real hard E-stop status
 		//    // in Rosie, the hard runstop was read from the ethercat drives
@@ -429,6 +300,7 @@ void Omnidrive::main()
 
 	}
 
+	//When stopping the node, make sure the velocities are zero and the drives get shutdown
 	ecat_admin.ec_drives_vel_zero();
 	ecat_admin.shutdown();
 
@@ -440,11 +312,8 @@ int main(int argc, char *argv[])
 	ros::init(argc, argv, "omni_ethercat");
 	std::cout << "Starting up\n"  ;
 
-
 	Omnidrive drive;
 	drive.main();
-
-
 }
 
 
