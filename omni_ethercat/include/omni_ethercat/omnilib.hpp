@@ -25,6 +25,16 @@
 #include <tf/transform_datatypes.h>
 #include <geometry_msgs/Twist.h>
 
+// Assumptions for using this library to control a base with Mecanum wheels:
+// 4 Mecanum wheels (45deg rollers) installed in a rectangular configuration.
+// Lines projected from the free rollers of the wheels point towards the center (from top view)
+// When used as a vector, follow this order: front-left, front-right, back-left, back-right
+// Positive rotation of front-left and back-left wheels follow right-hand-rule with a vector going out of the wheel away from the robot.
+// Positive rotation of front-right and back-right wheels follow right-hand-rule with a vector into the wheel towards the robot
+// Calculations follow this 4-page paper: "Kinematic Model of a Four Mecanum Wheeled Mobile Robot", Hamid Taheri, Bing Qiao, and Nurallah Ghaeminezhad
+
+
+
 namespace omni_ethercat
 {
   typedef Eigen::Matrix< double, 3, 4 > OmniJac;

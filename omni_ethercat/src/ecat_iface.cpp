@@ -107,7 +107,7 @@ void print_pdo_entry_reg(ec_pdo_entry_reg_t reg) {
 
 EcatAdmin::EcatAdmin(): rt_data_mutex(PTHREAD_MUTEX_INITIALIZER),
 		rt_should_exit(0), rt_misses(0), rt_thread(), ecat_cycle_counter(0), ec_domain_running(false),
-		finished_ecat_init_(false), cyclic_counter(0), realtime_cycle_period_ns(1e6),
+		finished_ecat_init_(false), cyclic_counter(0), realtime_cycle_period_ns(1e6), //make the realtime loop run at 1kHz
     torso_present_(false) {
 
 	std::cout << "EcatAdmin()" << std::endl;
@@ -316,8 +316,8 @@ void EcatAdmin::check_drive_state(){
 #define ELMO_STATUS_REG_STO1_BIT 22   // was 14, but one byte seems to come at the end instead of the front
 #define ELMO_STATUS_REG_STO2_BIT 23   // was 15 in the documentation
         //tested on CLI so: ethercat upload 0x1002 0 -p 0 -t uint32
-		bool sto_state = ((drive->task_rdata_user_side.elmo_status_register & (1 << ELMO_STATUS_REG_STO1_BIT)) &&
-				(drive->task_rdata_user_side.elmo_status_register & (1 << ELMO_STATUS_REG_STO2_BIT)));
+		bool sto_state = ((drive->task_rdata_user_side.elmo_status_register bitand (1 << ELMO_STATUS_REG_STO1_BIT)) and
+				(drive->task_rdata_user_side.elmo_status_register bitand (1 << ELMO_STATUS_REG_STO2_BIT)));
 
         //printf("check_drive_state(): m[%s]: sto_state = %i\n", name.c_str(), sto_state);
 		//printf("check_drive_state(): m[%s]: ELMO_STATUS_REG = 0x%08x\n", name.c_str(), drive->task_rdata_user_side.elmo_status_register);
@@ -665,6 +665,7 @@ void EcatAdmin::prepare_objects_for_slaves_on_boxy(){
 	//Here we instantiate one object EcatELMODrive per drive
 	//These have memory addresses that get passed to the ethercat master, so they must stay valid
 	//So we create them into shared_pointers
+    //EtherCAT chain: 0:br:elmo-duo-back-A1   1:bl:elmo-duo-back-A2 2:fr:elmo-duo-front-A1  3:fl:elmo-duo-front-A2
 
 	std::shared_ptr<EcatELMODrive> slave_fr = std::make_shared<EcatELMODrive>(std::string("fr"), 0, 2, elmo_vendor_id, elmo_gold_whistle_product_id );
 	std::shared_ptr<EcatELMODrive> slave_fl = std::make_shared<EcatELMODrive>(std::string("fl"), 0, 3, elmo_vendor_id, elmo_gold_whistle_product_id );

@@ -28,9 +28,7 @@
 //#include <iai_control_msgs/PowerState.h>
 #include <omni_ethercat/omnilib.hpp>   //library for the mecanum kinematics
 #include <omni_ethercat/ecat_iface.hpp>  //library for interfacing with the Ethercat Motor drivers
-
-
-//#include <sensor_msgs/JointState.h>
+#include <sensor_msgs/JointState.h>
 
 class Omnidrive
 {
@@ -39,18 +37,14 @@ private:
 	diagnostic_updater::Updater diagnostic_;
 	//ros::Publisher current_pub_;
 	//ros::Publisher power_pub_;
-	//ros::Publisher js_pub_; //torso
+	ros::Publisher js_pub_; //joint_states
 	//ros::Subscriber power_sub_;
 	ros::Time watchdog_time_;
-	double drive_[3], drive_last_[3];
-	//double torso_des_pos_; // torso
-	//bool fresh_torso_des_pos_; //torso
 	soft_runstop::Handler soft_runstop_handler_;
 	std::string odom_frame_id_;
 	std::string odom_child_frame_id_;
 	//std::string power_name_;
 	void cmdArrived(const geometry_msgs::TwistStamped::ConstPtr& msg);
-	//void torsoCmdArrived(const std_msgs::Float64::ConstPtr& msg); //torso
 	//void stateUpdate(diagnostic_updater::DiagnosticStatusWrapper &s);
 	//void powerCommand(const iai_control_msgs::PowerState::ConstPtr& msg);
 
@@ -78,7 +72,7 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(D
 	//power_pub_ = n_.advertise<iai_control_msgs::PowerState>("/power_state", 1);
 	//power_sub_ = n_.subscribe<iai_control_msgs::PowerState>("/power_command", 16, &Omnidrive::powerCommand, this);
 
-	//js_pub_ = n_.advertise<sensor_msgs::JointState>("/torso/joint_states", 1);  //torso
+	js_pub_ = n_.advertise<sensor_msgs::JointState>("/base/joint_states", 1);
 
 	//initialize the twists to all zeroes
 	des_twist_ = omni_ethercat::Twist2d(0,0,0);
@@ -90,12 +84,6 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(D
 	double drive_constant = 626594.7934; // in ticks/m
 	max_wheel_speed_ = max_wheel_tick_speed; //FIXME: read from param, specify units (rads/s?)
 	jac_params_ = omni_ethercat::JacParams(lx, ly, drive_constant);  // lx, ly, drive-constant in ticks/m
-
-
-	for(int i=0; i < 3; i++) {
-	  drive_last_[i] = 0;
-	  drive_[i] = 0;
-	}
 
 	watchdog_time_ = ros::Time::now();
 }
@@ -248,16 +236,13 @@ void Omnidrive::main()
 	//tf::TransformBroadcaster transforms;
 
 	ros::Subscriber sub = n_.subscribe("/base/cmd_vel", 10, &Omnidrive::cmdArrived, this);
-	//ros::Subscriber sub_torso = n_.subscribe("/torso/cmd_vel", 10, &Omnidrive::torsoCmdArrived, this); //torso
 	//ros::Publisher hard_runstop_pub = n_.advertise<std_msgs::Bool>("/hard_runstop", 1);
-
-	//double x=0, y=0, a=0, torso_pos=0;
 
 	int tf_publish_counter=0;
 	int tf_send_rate = loop_frequency / tf_frequency;
 
 
-	//torso:
+	//joint_state publisher
 	int js_publish_counter=0;
 	int js_send_rate = loop_frequency / js_frequency;
 
@@ -267,32 +252,54 @@ void Omnidrive::main()
 	ros::Rate r(loop_frequency);
 	ros::Time last_drive_check_time = ros::Time::now();
 
+	//Initialize encoder data to current one
+	omni_ethercat::OmniEncPos old_encoder_data({double(ecat_admin.drive_map["fl"]->task_rdata_user_side.actual_position),
+                                                double(ecat_admin.drive_map["fr"]->task_rdata_user_side.actual_position),
+                                                double(ecat_admin.drive_map["bl"]->task_rdata_user_side.actual_position),
+                                                double(ecat_admin.drive_map["fr"]->task_rdata_user_side.actual_position)});
+
+	//Initialize start odometry to zero (the convention is that it starts in zero where the base turns on).
+    omni_ethercat::Pose2d current_odometry({0.0, 0.0, 0.0});
+
+
 	while(n_.ok()) {
 
-		// Check if we need to enable the drives once a second
-		if ( ecat_admin.finished_ecat_init() && (ros::Time::now() - last_drive_check_time) > ros::Duration(0.1)) {
+		// Check if we need to re-enable the drives at 10Hz
+		if ( ecat_admin.finished_ecat_init() and (ros::Time::now() - last_drive_check_time) > ros::Duration(0.1)) {
 			last_drive_check_time = ros::Time::now();
 			ecat_admin.check_drive_state();
 		}
 
-		//omnidrive_odometry(&x, &y, &a, &torso_pos);
 
+		ros::Time time_of_odom = ros::Time::now();
+		omni_ethercat::OmniEncPos current_encoder_data;
+		current_encoder_data = {double(ecat_admin.drive_map["fl"]->task_rdata_user_side.actual_position),
+                                double(ecat_admin.drive_map["fr"]->task_rdata_user_side.actual_position),
+                                double(ecat_admin.drive_map["bl"]->task_rdata_user_side.actual_position),
+                                double(ecat_admin.drive_map["fr"]->task_rdata_user_side.actual_position)};
 
-		//FIXME: Do we need a watchdog for the torso?
+		auto encoder_diff = current_encoder_data - old_encoder_data;
+		current_odometry = omni_ethercat::nextOdometry(current_odometry, encoder_diff, jac_params_);
+
+        //std::cout << "odometry: " << current_odometry[0] <<" " << current_odometry[1] << " " <<current_odometry[2] << std::endl;
+        //std::cout << "wheel pos: " << current_encoder_data[0] << " " << current_encoder_data[1] << " " << current_encoder_data[2] << " " << current_encoder_data[3] << " " << std::endl;
+        //std::cout << "encoder diff: " << double(encoder_diff[0]) << " " << encoder_diff[1] << " " << encoder_diff[2] << " " << encoder_diff[3] << " " << std::endl;
+        old_encoder_data = current_encoder_data;
+
+        //omnidrive_odometry(&x, &y, &a, &torso_pos);
+
+        //calculate odometry
+
 
 		//The watchdog for the /cmd_vel topic
-		//should stop the base if now new messages arrive
+		//should stop the base if no new messages arrive
 		if( (( ros::Time::now() - watchdog_time_) > watchdog_period) || soft_runstop_handler_.getState()) {
 
 			//printf("Watchdog!\n");
 			//printf("State of the soft_runstop = %d\n", soft_runstop_handler_.getState());
 
 
-			//Only send the ROS warning the first time
-			//when it had some driving velocities, and getting here not because of
-			//the runstop
-			if((drive_[0] != 0 || drive_[1] != 0 || drive_[2] !=0)
-					&& !soft_runstop_handler_.getState())
+			if(!soft_runstop_handler_.getState())
 				ROS_WARN("engaged watchdog!");
 
 			//zero the command twist
@@ -305,7 +312,7 @@ void Omnidrive::main()
 
 		//This is a Vector holding 4 velocities, in this order of wheels: fl, fr, bl, br.
 		//The wheel axes are chosen such that if the base is moving forward as a whole, all of them have positive rotations
-		// imagine all wheels with the rotational axis pointing to the left.
+		// imagine all wheels with the rotational axis pointing to the left (right-hand-rule)
 		omni_ethercat::OmniEncVel vels;
 		vels = omni_ethercat::omniIK(jac_params_, limited_twist_);
 
@@ -316,6 +323,7 @@ void Omnidrive::main()
 			old_twist = limited_twist_;
 			std::cout << "Commanded twist: " << limited_twist_ << std::endl;
 		}
+		//print if there was a change of velocities
 		if (old_vels != vels) {
 			old_vels = vels;
 			std::cout << "Commanded wheel velocities: " << vels << std::endl;
@@ -323,48 +331,57 @@ void Omnidrive::main()
 
 		
 		//Actually command the wheel velocities
+        //omnilib uses this order: fl, fr, bl, br
 		ecat_admin.drive_map["fl"]->task_wdata_user_side.target_velocity = vels[0];
-		ecat_admin.drive_map["fr"]->task_wdata_user_side.target_velocity = -1 * vels[1];
+		ecat_admin.drive_map["fr"]->task_wdata_user_side.target_velocity = vels[1];
 		ecat_admin.drive_map["bl"]->task_wdata_user_side.target_velocity = vels[2];
-		ecat_admin.drive_map["br"]->task_wdata_user_side.target_velocity = -1 * vels[3];
+		ecat_admin.drive_map["br"]->task_wdata_user_side.target_velocity = vels[3];
 		ecat_admin.drive_map["fl"]->task_wdata_user_side.profile_velocity = abs(vels[0]);
-		ecat_admin.drive_map["fr"]->task_wdata_user_side.profile_velocity = abs(-1 * vels[1]);
+		ecat_admin.drive_map["fr"]->task_wdata_user_side.profile_velocity = abs(vels[1]);
 		ecat_admin.drive_map["bl"]->task_wdata_user_side.profile_velocity = abs(vels[2]);
-		ecat_admin.drive_map["br"]->task_wdata_user_side.profile_velocity = abs(-1 * vels[3]);
-
-		//ecat_admin.drive_map["torso"]->task_wdata_user_side.target_velocity = 0;
-
+		ecat_admin.drive_map["br"]->task_wdata_user_side.profile_velocity = abs(vels[3]);
 
 		for (auto & drive_el: ecat_admin.drive_map) {
 			auto & drive = drive_el.second;
 			drive->task_wdata_user_side.profile_acceleration = 5000000;
-
 			drive->task_wdata_user_side.profile_deceleration = 5000001;
 		}
 
 
 		//Evil acceleration limitation
 		// this runs in a slow loop
+        //FIXME: Add an acceleration limitation in the high-speed loop.
+        //FIXME: Consider switching elmo controller loop to synchronic velocity commands instead of profiled velocity
 		//FIXME: Move to the high-speed loop for smoothness -> Maybe not needed, this loop is 250Hz.
 		//FIXME: Limit in twist-space, make it use time
 
-		//    for(int i=0; i < 3; i++) {
-		//      // acceleration limiting
-		//      double acc = drive_[i] - drive_last_[i];
-		//      double fac_rot = (i == 2) ? 1.0/radius : 1.0;
-		//      acc = LIMIT(acc, acc_max*fac_rot*fac_rot);
-		//      drive_[i] = drive_last_[i] + acc;
-		//
-		//      // velocity limiting
-		//      drive_[i] = LIMIT(drive_[i], speed*fac_rot);
-		//
-		//      drive_last_[i] = drive_[i];
-		//    }
 
-		//if the watchdog was activated drive_[0-2] are 0.0
-		//only call omnidrive_drive once in the loop
-		//the last call will probably override the previous ones
-		//    omnidrive_drive(drive_[0], drive_[1], drive_[2], torso_des_pos_);
+        // publish odometry readings
+        if(++js_publish_counter == js_send_rate) {
+
+            // FIXME: report the actual velocity and effort values
+            sensor_msgs::JointState msg;
+            msg.header.stamp = time_of_odom;
+
+            msg.name.push_back("odom_x_joint");
+            msg.position.push_back(current_odometry[0]);
+            msg.velocity.push_back(0.0);
+            msg.effort.push_back(0.0);
+
+            msg.name.push_back("odom_y_joint");
+            msg.position.push_back(current_odometry[1]);
+            msg.velocity.push_back(0.0);
+            msg.effort.push_back(0.0);
+
+            msg.name.push_back("odom_z_joint");
+            msg.position.push_back(current_odometry[2]);
+            msg.velocity.push_back(0.0);
+            msg.effort.push_back(0.0);
+
+            js_pub_.publish(msg);
+            js_publish_counter = 0;
+        }
+
 
 		// publish odometry readings
 		//    if(++tf_publish_counter == tf_send_rate) {
