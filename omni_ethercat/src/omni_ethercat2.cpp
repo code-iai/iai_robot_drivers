@@ -75,7 +75,15 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(D
 	double max_wheel_tick_speed = 833333.0; // ticks/s : 5000 rpm/ 60s * 10000 ticks/rev
 	double lx = 0.39225;
 	double ly = 0.303495;
-	double drive_constant = 626594.7934; // in ticks/m
+	//FIXME: read these settings from the parameter server
+	// drive_constant = amount of ticks needed for a one meter translation (ticks/m)
+        // calculated thus: 10000 (ticks/turn given by encoder) * gear ratio / ( pi * diameter)
+        // diameter is 8" = 8*25.4/1000 = 0.797965m
+        // circumference for that 8" wheel is = 0.638372m
+	//double drive_constant = 626594; // in ticks/m  For Boxy (gear ratio 40:1)
+        double drive_constant = 313297; // in ticks/m  For donbot (gear ratio 20:1)
+
+
 	max_wheel_speed_ = max_wheel_tick_speed; //FIXME: read from param, specify units (rads/s?)
 	jac_params_ = omni_ethercat::JacParams(lx, ly, drive_constant);  // lx, ly, drive-constant in ticks/m
 
