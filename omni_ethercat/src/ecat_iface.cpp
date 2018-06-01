@@ -114,6 +114,7 @@ EcatAdmin::EcatAdmin(): rt_data_mutex(PTHREAD_MUTEX_INITIALIZER),
 	prepare_objects_for_slaves_on_boxy();
 	//print_pdo_entries();
 
+
 }
 
 int EcatAdmin::start_omni_realtime(){
@@ -736,6 +737,12 @@ EcatELMODrive::EcatELMODrive(std::string name, uint16_t alias, uint16_t position
 	//std::cout << "EcatSlave constructor" << std::endl;
 
 	setup_variables();
+
+	//zero out all the variables, specially useful to have initial speed equal zero
+	task_rdata_user_side = {};
+	task_rdata_process_side = {};
+	task_wdata_process_side = {};
+	task_wdata_user_side = {};
 
 }
 
