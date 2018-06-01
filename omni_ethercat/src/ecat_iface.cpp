@@ -366,12 +366,19 @@ void EcatAdmin::check_drive_state(){
 				// All is good, continue
 				controlword = 0x0f;
 			}
-		} else {
-			printf("\e[31;mcheck_drive_state(): m[%s]: STO is blocking!\e[0m\n", name.c_str());
+		} else {  //sto_state == false
+			//Only print on sinking edge
+			if (drive->old_sto_state == true) {
+				printf("\e[31;mcheck_drive_state(): m[%s]: STO is blocking!\e[0m\n", name.c_str());
+			}
 			controlword = 0x00; // don't do anything
 		}
+
 		drive->task_wdata_user_side.controlword = controlword;
+
 		//std::cout << "check_drive_state(): m[" << name << "]: controlword = 0x" << std::hex << controlword << std::dec << std::endl;
+		//save the STO state
+		drive->old_sto_state = sto_state;
 
 	}
 
@@ -633,8 +640,6 @@ void EcatAdmin::check_master_state(void)
 
 void EcatAdmin::check_slave_config_states(void)
 {
-	int i;
-
 	ec_slave_config_state_t s;
 
 	//Report if something has changed from the saved slave_config_state
@@ -642,12 +647,12 @@ void EcatAdmin::check_slave_config_states(void)
 		auto & drive = drive_el.second;
 		ecrt_slave_config_state(drive->sc, &s);
 		if (s.al_state != drive->slave_config_state_old.al_state)
-			printf("m%d: State 0x%02X.\n", i, s.al_state);
+			printf("check_slave_config_states(): m[%s]: State 0x%02X.\n", drive->name_.c_str(), s.al_state);
 		if (s.online != drive->slave_config_state_old.online)
-			printf("m%d: %s.\n", i,
+			printf("check_slave_config_states(): m[%s]: %s.\n", drive->name_.c_str(),
 					s.online ? "online" : "offline");
 		if (s.operational != drive->slave_config_state_old.operational)
-			printf("m%d: %soperational.\n", i,
+			printf("check_slave_config_states(): m[%s]: %soperational.\n", drive->name_.c_str(),
 					s.operational ? "" : "Not ");
 
 		//Save data to the drive object
@@ -744,6 +749,7 @@ EcatELMODrive::EcatELMODrive(std::string name, uint16_t alias, uint16_t position
 	task_wdata_process_side = {};
 	task_wdata_user_side = {};
 
+	old_sto_state = false;
 }
 
 EcatELMODrive::~EcatELMODrive() {

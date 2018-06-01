@@ -159,6 +159,7 @@ public:
 
 	DriveTaskReadVars task_rdata_user_side;
 	DriveTaskWriteVars task_wdata_user_side;
+    bool old_sto_state;
 
 private:
 	DriveTaskReadVars task_rdata_process_side;
@@ -173,6 +174,7 @@ private:
 	std::vector<EcatPdoEntry> pdos_;
 
 	uint8_t *domain_pd_;  //holds the address to which the offsets are relative
+
 
 };
 

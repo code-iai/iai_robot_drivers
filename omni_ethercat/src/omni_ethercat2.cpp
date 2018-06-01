@@ -264,7 +264,7 @@ void Omnidrive::main()
                                     double(ecat_admin.drive_map["bl"]->task_rdata_user_side.actual_torque),
                                     double(ecat_admin.drive_map["fr"]->task_rdata_user_side.actual_torque)};
 
-		//Current speed in the base reference frame
+		//Current cartesian speed in the base reference frame
 		current_speed_base = omni_ethercat::omniFK(jac_params_, current_speed_data_ticks);
 		//Convert the speed to the odom frame of reference
 		current_speed_odom = omni_ethercat::changeReferenceFrame(current_odometry, current_speed_base);
