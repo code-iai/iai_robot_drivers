@@ -27,6 +27,10 @@
 #include <omni_ethercat/ecat_iface.hpp>  //library for interfacing with the Ethercat Motor drivers
 #include <sensor_msgs/JointState.h>
 
+Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
+Eigen::IOFormat CommaInitFmt(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", ", ", "", "", " << ", ";");
+
+
 class Omnidrive
 {
 private:
@@ -46,6 +50,10 @@ private:
 	double max_wheel_speed_;
 	omni_ethercat::JacParams jac_params_;
 
+    std::map<std::string, unsigned int> joint_name_to_index_;
+    void giskardCommand(const sensor_msgs::JointState& msg);
+
+
 public:
 	Omnidrive();
 	void main();
@@ -58,7 +66,7 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(D
 	n_.param("odom_frame_id", odom_frame_id_, std::string("/odom"));
 	n_.param("odom_child_frame_id", odom_child_frame_id_, std::string("/base_footprint"));
 
-	js_pub_ = n_.advertise<sensor_msgs::JointState>("/base/joint_states", 1);
+	js_pub_ = n_.advertise<sensor_msgs::JointState>("joint_states", 1);
 
 	//initialize the twists to all zeroes
 	des_twist_ = omni_ethercat::Twist2d(0,0,0);
@@ -71,7 +79,13 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(D
 	max_wheel_speed_ = max_wheel_tick_speed; //FIXME: read from param, specify units (rads/s?)
 	jac_params_ = omni_ethercat::JacParams(lx, ly, drive_constant);  // lx, ly, drive-constant in ticks/m
 
+    //Only looking for the info on these joint from the giskard message
+    joint_name_to_index_.insert(std::pair<std::string, unsigned int>("odom_x_joint",0));
+    joint_name_to_index_.insert(std::pair<std::string, unsigned int>("odom_y_joint",1));
+    joint_name_to_index_.insert(std::pair<std::string, unsigned int>("odom_z_joint",2));
+
 	watchdog_time_ = ros::Time::now();
+
 }
 
 void Omnidrive::cmdArrived(const geometry_msgs::TwistStamped::ConstPtr& msg)
@@ -79,7 +93,6 @@ void Omnidrive::cmdArrived(const geometry_msgs::TwistStamped::ConstPtr& msg)
 
 	//std::cout << "cmdArrived()" << std::endl;
 
-	// FIXME: use TwistStamped instead of Twist and check that people command in the right frame
 	// NOTE: No need for synchronization since this is called inside spinOnce() in the main loop
 
 	//Checking that the frame is correct
@@ -93,18 +106,80 @@ void Omnidrive::cmdArrived(const geometry_msgs::TwistStamped::ConstPtr& msg)
 		limited_twist_ = omni_ethercat::limitTwist(limited_twist_, jac_params_, max_wheel_speed_);
 
 		if (des_twist_ != limited_twist_) {
-			std::cout << "The desired twist will be limited from: " << des_twist_ << " to: " << limited_twist_ << std::endl;
+			ROS_WARN_STREAM_THROTTLE(0.5, "The desired twist will be limited from: " << des_twist_ << " to: " << limited_twist_);
 		}
-	
-		//std::cout << "limited_twist_ = " << limited_twist_ << std::endl;
+
 
 		watchdog_time_ = ros::Time::now();
 	} else {
-		std::cerr << "Twist command arrived expressed in a wrong frame.";
+		ROS_ERROR_THROTTLE(0.5, "Twist command arrived expressed in a wrong frame.");
+
 	}
 
 
 }
+
+void Omnidrive::giskardCommand(const sensor_msgs::JointState& msg)
+{
+
+    bool received_one_valid_command = false;
+
+    //check length of arrays, if they don't match, bail out
+    unsigned long len_name = msg.name.size();
+    unsigned long len_vel = msg.velocity.size();
+
+    if (len_name != len_vel) {
+            ROS_WARN_ONCE("Omnidrive::giskardCommand: Received wrong length of arrays. Ignoring. This warning will only print once.");
+        } else {
+
+        //Search the names for a matching name in the list of joints controlled by this process
+        for (unsigned int i = 0; i < len_name; ++i) {
+            std::map<std::string, unsigned int>::iterator it;
+
+            it = joint_name_to_index_.find(msg.name[i]); //returns an iterator if found, otherwise map::end
+
+            if (it != joint_name_to_index_.end()) {
+                //the name is in my list
+                unsigned int j = it->second;
+
+                if (j == 0) { //odom_x_joint
+                    //command for odom_x_joint
+                    des_twist_[0] = msg.velocity[i];
+                    received_one_valid_command = true;
+                } else if (j == 1) {  //odom_y_joint
+                    //command for odom_x_joint
+                    des_twist_[1] = msg.velocity[i];
+                    received_one_valid_command = true;
+                } else if (j == 2) { //odom_z_joint
+                    //command for odom_x_joint
+                    des_twist_[2] = msg.velocity[i];
+                    received_one_valid_command = true;
+                }
+
+
+            }
+
+        }
+
+
+        if (received_one_valid_command) {
+            //limit to our maximum values
+            limited_twist_ = omni_ethercat::limitTwist(des_twist_, max_twist_);
+            //limit again if any wheel exceeds the maximum wheel speed
+            limited_twist_ = omni_ethercat::limitTwist(limited_twist_, jac_params_, max_wheel_speed_);
+
+            if (des_twist_ != limited_twist_) {
+                ROS_WARN_STREAM_THROTTLE(0.5, "The desired twist will be limited from: " << des_twist_ << " to: " << limited_twist_);
+            }
+
+            //pet the watchdog
+            watchdog_time_ = ros::Time::now();
+
+        }
+    }
+
+}
+
 
 void Omnidrive::main()
 {
@@ -131,9 +206,9 @@ void Omnidrive::main()
 
 	//tf::TransformBroadcaster transforms;
 
-	ros::Subscriber sub = n_.subscribe("/base/cmd_vel", 10, &Omnidrive::cmdArrived, this);
+	ros::Subscriber sub = n_.subscribe("cmd_vel", 10, &Omnidrive::cmdArrived, this);
 	//ros::Publisher hard_runstop_pub = n_.advertise<std_msgs::Bool>("/hard_runstop", 1);
-
+    ros::Subscriber sub_giskard = n_.subscribe("giskard_command", 1, &Omnidrive::giskardCommand, this);
 	int tf_publish_counter=0;
 	int tf_send_rate = loop_frequency / tf_frequency;
 
@@ -185,7 +260,7 @@ void Omnidrive::main()
 
 
 
-		//The watchdog for the /cmd_vel topic
+		//The watchdog for the commanding topics
 		//should stop the base if no new messages arrive
 		if( (( ros::Time::now() - watchdog_time_) > watchdog_period) || soft_runstop_handler_.getState()) {
 
@@ -194,7 +269,7 @@ void Omnidrive::main()
 
 
 			if(!soft_runstop_handler_.getState())
-				ROS_WARN("engaged watchdog!");
+				ROS_WARN_THROTTLE(1, "engaged watchdog!");
 
 			//zero the command twist
 			limited_twist_ = omni_ethercat::Twist2d(0.0, 0.0, 0.0);
@@ -217,29 +292,28 @@ void Omnidrive::main()
 		//print if there is a new commanded velocity
 		if (old_twist != limited_twist_) {
 			old_twist = limited_twist_;
-			std::cout << "Commanded twist: " << limited_twist_ << std::endl;
+			ROS_INFO_STREAM("Commanded twist: " << limited_twist_.format(CommaInitFmt));
 		}
 		//print if there was a change of velocities
 		if (old_vels != vels) {
 			old_vels = vels;
-			std::cout << "Commanded wheel velocities: " << vels << std::endl;
+
+            ROS_INFO_STREAM("Commanded wheel velocities: " << vels.format(CommaInitFmt));
 		}
 
 		
 		//Actually command the wheel velocities
         //omnilib uses this order: fl, fr, bl, br
-		ecat_admin.drive_map["fl"]->task_wdata_user_side.target_velocity = vels[0];
-		ecat_admin.drive_map["fr"]->task_wdata_user_side.target_velocity = vels[1];
-		ecat_admin.drive_map["bl"]->task_wdata_user_side.target_velocity = vels[2];
-		ecat_admin.drive_map["br"]->task_wdata_user_side.target_velocity = vels[3];
-		ecat_admin.drive_map["fl"]->task_wdata_user_side.profile_velocity = abs(vels[0]);
-		ecat_admin.drive_map["fr"]->task_wdata_user_side.profile_velocity = abs(vels[1]);
-		ecat_admin.drive_map["bl"]->task_wdata_user_side.profile_velocity = abs(vels[2]);
-		ecat_admin.drive_map["br"]->task_wdata_user_side.profile_velocity = abs(vels[3]);
+		ecat_admin.drive_map["fl"]->task_wdata_user_side.target_velocity = int32_t(vels[0]);
+		ecat_admin.drive_map["fr"]->task_wdata_user_side.target_velocity = int32_t(vels[1]);
+		ecat_admin.drive_map["bl"]->task_wdata_user_side.target_velocity = int32_t(vels[2]);
+		ecat_admin.drive_map["br"]->task_wdata_user_side.target_velocity = int32_t(vels[3]);
+
 
 		for (auto & drive_el: ecat_admin.drive_map) {
 			auto & drive = drive_el.second;
-			drive->task_wdata_user_side.profile_acceleration = 5000000;
+            drive->task_wdata_user_side.profile_velocity = 832000; // FIXME: Check. using just under max speed (5000rpm)
+            drive->task_wdata_user_side.profile_acceleration = 5000000;
 			drive->task_wdata_user_side.profile_deceleration = 5000001;
 		}
 
@@ -310,9 +384,10 @@ void Omnidrive::main()
 int main(int argc, char *argv[])
 {
 	ros::init(argc, argv, "omni_ethercat");
-	std::cout << "Starting up\n"  ;
+	ROS_INFO("Starting up");
 
-	Omnidrive drive;
+
+    Omnidrive drive;
 	drive.main();
 }
 
