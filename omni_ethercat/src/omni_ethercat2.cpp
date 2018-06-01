@@ -209,7 +209,7 @@ void Omnidrive::main()
 	ros::Subscriber sub = n_.subscribe("cmd_vel", 10, &Omnidrive::cmdArrived, this);
 	//ros::Publisher hard_runstop_pub = n_.advertise<std_msgs::Bool>("/hard_runstop", 1);
     ros::Subscriber sub_giskard = n_.subscribe("giskard_command", 1, &Omnidrive::giskardCommand, this);
-	int tf_publish_counter=0;
+	int tf_publish_counter = 0;
 	int tf_send_rate = loop_frequency / tf_frequency;
 
 
@@ -245,33 +245,55 @@ void Omnidrive::main()
 		//Calculate odometry
 		ros::Time time_of_odom = ros::Time::now();
 		omni_ethercat::OmniEncPos current_encoder_data;
+		omni_ethercat::OmniEncVel current_speed_data_ticks;
+        omni_ethercat::Twist2d current_speed_base, current_speed_odom;
+
 		current_encoder_data = {double(ecat_admin.drive_map["fl"]->task_rdata_user_side.actual_position),
                                 double(ecat_admin.drive_map["fr"]->task_rdata_user_side.actual_position),
                                 double(ecat_admin.drive_map["bl"]->task_rdata_user_side.actual_position),
                                 double(ecat_admin.drive_map["fr"]->task_rdata_user_side.actual_position)};
 
+		current_speed_data_ticks = {double(ecat_admin.drive_map["fl"]->task_rdata_user_side.actual_velocity),
+                              double(ecat_admin.drive_map["fr"]->task_rdata_user_side.actual_velocity),
+                              double(ecat_admin.drive_map["bl"]->task_rdata_user_side.actual_velocity),
+                              double(ecat_admin.drive_map["fr"]->task_rdata_user_side.actual_velocity)};
+
+		//FIXME: figure out how to convert actual_torque to a decent unit (amps, NM, ...)
+		Eigen::Vector4d currents = {double(ecat_admin.drive_map["fl"]->task_rdata_user_side.actual_torque),
+                                    double(ecat_admin.drive_map["fr"]->task_rdata_user_side.actual_torque),
+                                    double(ecat_admin.drive_map["bl"]->task_rdata_user_side.actual_torque),
+                                    double(ecat_admin.drive_map["fr"]->task_rdata_user_side.actual_torque)};
+
+		//Current speed in the base reference frame
+		current_speed_base = omni_ethercat::omniFK(jac_params_, current_speed_data_ticks);
+		//Convert the speed to the odom frame of reference
+		current_speed_odom = omni_ethercat::changeReferenceFrame(current_odometry, current_speed_base);
+
+
+        //Integrate the change of position in the wheels into the odometry
 		auto encoder_diff = current_encoder_data - old_encoder_data;
 		current_odometry = omni_ethercat::nextOdometry(current_odometry, encoder_diff, jac_params_);
 
         //std::cout << "odometry: " << current_odometry[0] <<" " << current_odometry[1] << " " <<current_odometry[2] << std::endl;
         //std::cout << "wheel pos: " << current_encoder_data[0] << " " << current_encoder_data[1] << " " << current_encoder_data[2] << " " << current_encoder_data[3] << " " << std::endl;
         //std::cout << "encoder diff: " << double(encoder_diff[0]) << " " << encoder_diff[1] << " " << encoder_diff[2] << " " << encoder_diff[3] << " " << std::endl;
+        //save the current encoders for calculating the delta next time
         old_encoder_data = current_encoder_data;
-
 
 
 		//The watchdog for the commanding topics
 		//should stop the base if no new messages arrive
-		if( (( ros::Time::now() - watchdog_time_) > watchdog_period) || soft_runstop_handler_.getState()) {
+		if ( (( ros::Time::now() - watchdog_time_) > watchdog_period) || soft_runstop_handler_.getState() ) {
 
 			//printf("Watchdog!\n");
 			//printf("State of the soft_runstop = %d\n", soft_runstop_handler_.getState());
 
 
-			if(!soft_runstop_handler_.getState())
+			if (!soft_runstop_handler_.getState() and !(des_twist_[0] == 0.0 and des_twist_[1] == 0.0 and des_twist_[2] == 0.0) )
 				ROS_WARN_THROTTLE(1, "engaged watchdog!");
 
 			//zero the command twist
+            des_twist_ = omni_ethercat::Twist2d(0.0, 0.0, 0.0);
 			limited_twist_ = omni_ethercat::Twist2d(0.0, 0.0, 0.0);
 
 			//While the watchdog is active, revisit here after watchdog_period
@@ -335,17 +357,17 @@ void Omnidrive::main()
 
             msg.name.push_back("odom_x_joint");
             msg.position.push_back(current_odometry[0]);
-            msg.velocity.push_back(0.0);
+            msg.velocity.push_back(current_speed_odom[0]);
             msg.effort.push_back(0.0);
 
             msg.name.push_back("odom_y_joint");
             msg.position.push_back(current_odometry[1]);
-            msg.velocity.push_back(0.0);
+            msg.velocity.push_back(current_speed_odom[1]);
             msg.effort.push_back(0.0);
 
             msg.name.push_back("odom_z_joint");
             msg.position.push_back(current_odometry[2]);
-            msg.velocity.push_back(0.0);
+            msg.velocity.push_back(current_speed_odom[2]);
             msg.effort.push_back(0.0);
 
             js_pub_.publish(msg);
