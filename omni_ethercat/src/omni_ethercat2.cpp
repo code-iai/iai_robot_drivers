@@ -340,13 +340,6 @@ void Omnidrive::main()
 		ecat_admin.drive_map["br"]->task_wdata_user_side.target_velocity = int32_t(vels[3]);
 
 
-		for (auto & drive_el: ecat_admin.drive_map) {
-			auto & drive = drive_el.second;
-            drive->task_wdata_user_side.profile_velocity = 832000; // FIXME: Check. using just under max speed (5000rpm)
-            drive->task_wdata_user_side.profile_acceleration = 5000000;
-			drive->task_wdata_user_side.profile_deceleration = 5000001;
-		}
-
 
 		//Evil acceleration limitation
 		// this runs in a slow loop
