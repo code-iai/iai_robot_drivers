@@ -11,8 +11,8 @@
   <maintainer email="georg.bartels@cs.uni-bremen.de">Georg Bartels</maintainer>
   <maintainer email="amaldo@cs.uni-bremen.de">Alexis Maldonado</maintainer>
 
-  <license>GPL,BSD</license>
-  <author>Ingo Kresse, Alexis Maldonado</author>
+  <license>GPL</license>
+  <author>Alexis Maldonado, Ingo Kresse</author>
 
   <author email="amaldo@cs.uni-bremen.de">Alexis Maldonado</author>
   <author email="kresse@in.tum.de">Ingo Kresse</author>
@@ -30,6 +30,7 @@
   <depend>sensor_msgs</depend>
   <depend>soft_runstop</depend>
   <depend>message_runtime</depend>
+  <depend>reflexxes_type2</depend>
   <test_depend>gtest</test_depend>
   <test_depend>orocos_kdl</test_depend>
 

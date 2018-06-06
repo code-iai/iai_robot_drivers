@@ -21,6 +21,7 @@
  */
 
 #include <omni_ethercat/ecat_iface.hpp>
+#include <omni_ethercat/interpolator.hpp>
 #include <ecrt.h>
 
 
@@ -233,6 +234,9 @@ namespace omni_ecat {
 
         // Initialize the tick struct with the current time
         clock_gettime(CLOCK_REALTIME, &tick);
+
+        ReflexxesInterpolator interpolator;
+
 
 
         while (!rt_should_exit) {

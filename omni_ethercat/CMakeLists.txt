@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   iai_control_msgs
   soft_runstop
   sensor_msgs
+  reflexxes_type2
 )
 
 find_package(Eigen3 REQUIRED)
@@ -34,6 +35,7 @@ catkin_package(
     iai_control_msgs 
     soft_runstop
     sensor_msgs
+    reflexxes_type2
   DEPENDS
     Eigen
 )
@@ -57,7 +59,7 @@ SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 
 add_executable(omni_ethercat src/omni_ethercat.cpp src/omnilib/omnilib.c src/omnilib/realtime.c)
-add_executable(omni_ethercat2 src/omni_ethercat2.cpp src/ecat_iface.cpp)
+add_executable(omni_ethercat2 src/omni_ethercat2.cpp src/ecat_iface.cpp src/interpolator.cpp)
 
 target_link_libraries(omni_ethercat ${catkin_LIBRARIES})
 target_link_libraries(omni_ethercat2 ${catkin_LIBRARIES})
@@ -66,7 +68,7 @@ target_link_libraries(omni_ethercat2 ${catkin_LIBRARIES})
 #       upstream_igh_eml which is declared in package igh_eml has built. It would
 #       be nice to get this name through some variable. But I do not know how to do this.
 add_dependencies(omni_ethercat upstream_igh_eml)
-add_dependencies(omni_ethercat2 upstream_igh_eml)
+add_dependencies(omni_ethercat2 upstream_igh_eml reflexxes_type2)
 
 
 catkin_add_gtest(${PROJECT_NAME}-test test/${PROJECT_NAME}/omnilib.cpp test/main.cpp)
@@ -79,3 +81,6 @@ if(TARGET ${PROJECT_NAME}-test)
   target_link_libraries(${PROJECT_NAME}-test ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES})
   add_dependencies(${PROJECT_NAME}-test ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES})
 endif()
+
+#MESSAGE(WARNING "catkin_INCLUDE_DIRS: ${catkin_INCLUDE_DIRS}")
+
