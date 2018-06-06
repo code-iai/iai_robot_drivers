@@ -24,6 +24,8 @@
 #include <omni_ethercat/interpolator.hpp>
 #include <ecrt.h>
 
+Eigen::IOFormat CommaInitFmt2(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", ", ", "", "", " << ", ";");
+
 
 /*****************************************************************************/
 
@@ -228,6 +230,44 @@ namespace omni_ecat {
 
     }
 
+    void EcatAdmin::set_new_goal_twist(double dx, double dy, double dtheta) {
+        interpolator.set_target_twist(dx, dy, dtheta);
+    }
+
+    void EcatAdmin::interpolator_to_wheels() {
+        // Do the Inverse Kinematics: Desired base twist -> 4 wheel velocities
+        //This is a Vector holding 4 velocities, in this order of wheels: fl, fr, bl, br.
+        //The wheel axes are chosen such that if the base is moving forward as a whole, all of them have positive rotations
+        // imagine all wheels with the rotational axis pointing to the left (right-hand-rule)
+
+        double dx, dy, dtheta;
+        interpolator.get_next_twist(dx, dy, dtheta);
+
+        omni_ethercat::Twist2d goal_twist = {dx, dy, dtheta};
+
+        //std::cout << "new twist = [" << dx << "," << dy << "," << dtheta << "]" << std::endl;
+
+        omni_ethercat::OmniEncVel vels;
+        vels = omni_ethercat::omniIK(jac_params_, goal_twist);
+
+        static omni_ethercat::OmniEncVel old_vels;
+        //print if there was a change of velocities
+        if (old_vels != vels) {
+            old_vels = vels;
+            //ROS_INFO_STREAM("Commanded wheel velocities: " << vels.format(CommaInitFmt2));
+            std::cout << "Commanded wheel velocities: " << vels.format(CommaInitFmt2) << std::endl;
+        }
+
+        //Actually command the wheel velocities
+        //omnilib uses this order: fl, fr, bl, br
+        drive_map["fl"]->task_wdata_user_side.target_velocity = int32_t(vels[0]);
+        drive_map["fr"]->task_wdata_user_side.target_velocity = int32_t(vels[1]);
+        drive_map["bl"]->task_wdata_user_side.target_velocity = int32_t(vels[2]);
+        drive_map["br"]->task_wdata_user_side.target_velocity = int32_t(vels[3]);
+
+
+    }
+
     void EcatAdmin::realtime_main() {
         struct timespec tick;
 
@@ -235,11 +275,14 @@ namespace omni_ecat {
         // Initialize the tick struct with the current time
         clock_gettime(CLOCK_REALTIME, &tick);
 
-        ReflexxesInterpolator interpolator;
+        interpolator.set_current_pose(0.0, 0.0, 0.0);
 
 
 
         while (!rt_should_exit) {
+
+
+            interpolator_to_wheels();
 
             cyclic_ecat_task();  //do the things that need to happen regularly in the ECAT communication cycle
 
@@ -253,6 +296,13 @@ namespace omni_ecat {
                 }
                 pthread_mutex_unlock(&rt_data_mutex);
             }
+
+
+
+
+
+
+
 
             // Compute end of next period
             timespecInc(&tick, realtime_cycle_period_ns);

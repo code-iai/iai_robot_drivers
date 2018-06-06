@@ -118,6 +118,7 @@ void Omnidrive::cmdArrived(const geometry_msgs::TwistStamped::ConstPtr& msg)
 		}
 
 
+
 		watchdog_time_ = ros::Time::now();
 	} else {
 		ROS_ERROR_THROTTLE(0.5, "Twist command arrived expressed in a wrong frame.");
@@ -308,37 +309,17 @@ void Omnidrive::main()
 			watchdog_time_ = ros::Time::now();
 		}
 
-
-		// Do the Inverse Kinematics: Desired base twist -> 4 wheel velocities
-		//This is a Vector holding 4 velocities, in this order of wheels: fl, fr, bl, br.
-		//The wheel axes are chosen such that if the base is moving forward as a whole, all of them have positive rotations
-		// imagine all wheels with the rotational axis pointing to the left (right-hand-rule)
-		omni_ethercat::OmniEncVel vels;
-		vels = omni_ethercat::omniIK(jac_params_, limited_twist_);
+		//Tell the interpolator our new goal twist
+        ecat_admin.set_new_goal_twist(limited_twist_[0], limited_twist_[1], limited_twist_[2]);
+		ecat_admin.jac_params_ = jac_params_;
 
 		static omni_ethercat::Twist2d old_twist;
-		static omni_ethercat::OmniEncVel old_vels;
 
 		//print if there is a new commanded velocity
 		if (old_twist != limited_twist_) {
 			old_twist = limited_twist_;
 			ROS_INFO_STREAM("Commanded twist: " << limited_twist_.format(CommaInitFmt));
 		}
-		//print if there was a change of velocities
-		if (old_vels != vels) {
-			old_vels = vels;
-
-            ROS_INFO_STREAM("Commanded wheel velocities: " << vels.format(CommaInitFmt));
-		}
-
-		
-		//Actually command the wheel velocities
-        //omnilib uses this order: fl, fr, bl, br
-		ecat_admin.drive_map["fl"]->task_wdata_user_side.target_velocity = int32_t(vels[0]);
-		ecat_admin.drive_map["fr"]->task_wdata_user_side.target_velocity = int32_t(vels[1]);
-		ecat_admin.drive_map["bl"]->task_wdata_user_side.target_velocity = int32_t(vels[2]);
-		ecat_admin.drive_map["br"]->task_wdata_user_side.target_velocity = int32_t(vels[3]);
-
 
 
 		//Evil acceleration limitation
