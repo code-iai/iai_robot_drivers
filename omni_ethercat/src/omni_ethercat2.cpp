@@ -83,7 +83,7 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(D
         // For donbot: drive_constant = 10000*20/(3.14159*8*25.4/1000)
 	//double drive_constant = 626594; // in ticks/m  For Boxy (gear ratio 40:1)
         //for donbot: adjusting the 0.5% error in translation when moving
-        double drive_constant = 10000*20/(3.14159*8*1.005*25.4/1000); // in ticks/m 
+        double drive_constant = 10000*20/(3.14159*8*1.004*25.4/1000); // in ticks/m 
 
 
 	max_wheel_speed_ = max_wheel_tick_speed; //FIXME: read from param, specify units (rads/s?)
