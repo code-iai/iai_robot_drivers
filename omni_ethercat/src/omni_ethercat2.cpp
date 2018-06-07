@@ -73,8 +73,8 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(D
 	limited_twist_ = omni_ethercat::Twist2d(0.5,0,0);
 	max_twist_ = omni_ethercat::Twist2d(1.0, 1.0, 1.0); //FIXME: read from param
 	double max_wheel_tick_speed = 833333.0; // ticks/s : 5000 rpm/ 60s * 10000 ticks/rev
-	double lx = 0.39225;
-	double ly = 0.303495;
+	double lx = 0.30375;
+	double ly = 0.39475;
 	//FIXME: read these settings from the parameter server
 	// drive_constant = amount of ticks needed for a one meter translation (ticks/m)
         // calculated thus: 10000 (ticks/turn given by encoder) * gear ratio / ( pi * diameter)
