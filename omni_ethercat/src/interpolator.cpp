@@ -27,13 +27,13 @@ ReflexxesInterpolator::ReflexxesInterpolator() : RML(NULL), IP(NULL), OP(NULL) {
     IP->CurrentAccelerationVector->VecData  [1] =    0.0      ;
     IP->CurrentAccelerationVector->VecData  [2] =    0.0      ;
 
-    IP->MaxAccelerationVector->VecData      [0] =    0.1      ;
-    IP->MaxAccelerationVector->VecData      [1] =    0.1      ;
-    IP->MaxAccelerationVector->VecData      [2] =    0.1      ;
+    IP->MaxAccelerationVector->VecData      [0] =    2.0      ;
+    IP->MaxAccelerationVector->VecData      [1] =    2.0      ;
+    IP->MaxAccelerationVector->VecData      [2] =    2.0      ;
 
-    IP->MaxJerkVector->VecData              [0] =    2.0      ;
-    IP->MaxJerkVector->VecData              [1] =    2.0      ;
-    IP->MaxJerkVector->VecData              [2] =    2.0      ;
+    IP->MaxJerkVector->VecData              [0] =    10.0      ;
+    IP->MaxJerkVector->VecData              [1] =    10.0      ;
+    IP->MaxJerkVector->VecData              [2] =    10.0      ;
 
     IP->TargetVelocityVector->VecData       [0] =    0.0       ;
     IP->TargetVelocityVector->VecData       [1] =    0.0       ;
