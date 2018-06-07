@@ -243,6 +243,8 @@ void Omnidrive::main()
 	//Initialize start odometry to zero (the convention is that it starts in zero where the base turns on).
     omni_ethercat::Pose2d current_odometry({0.0, 0.0, 0.0});
 
+    ecat_admin.jac_params_ = jac_params_;
+
 
 	while(n_.ok()) {
 
@@ -262,18 +264,18 @@ void Omnidrive::main()
 		current_encoder_data = {double(ecat_admin.drive_map["fl"]->task_rdata_user_side.actual_position),
                                 double(ecat_admin.drive_map["fr"]->task_rdata_user_side.actual_position),
                                 double(ecat_admin.drive_map["bl"]->task_rdata_user_side.actual_position),
-                                double(ecat_admin.drive_map["fr"]->task_rdata_user_side.actual_position)};
+                                double(ecat_admin.drive_map["br"]->task_rdata_user_side.actual_position)};
 
 		current_speed_data_ticks = {double(ecat_admin.drive_map["fl"]->task_rdata_user_side.actual_velocity),
                               double(ecat_admin.drive_map["fr"]->task_rdata_user_side.actual_velocity),
                               double(ecat_admin.drive_map["bl"]->task_rdata_user_side.actual_velocity),
-                              double(ecat_admin.drive_map["fr"]->task_rdata_user_side.actual_velocity)};
+                              double(ecat_admin.drive_map["br"]->task_rdata_user_side.actual_velocity)};
 
 		//FIXME: figure out how to convert actual_torque to a decent unit (amps, NM, ...)
 		Eigen::Vector4d currents = {double(ecat_admin.drive_map["fl"]->task_rdata_user_side.actual_torque),
                                     double(ecat_admin.drive_map["fr"]->task_rdata_user_side.actual_torque),
                                     double(ecat_admin.drive_map["bl"]->task_rdata_user_side.actual_torque),
-                                    double(ecat_admin.drive_map["fr"]->task_rdata_user_side.actual_torque)};
+                                    double(ecat_admin.drive_map["br"]->task_rdata_user_side.actual_torque)};
 
 		//Current cartesian speed in the base reference frame
 		current_speed_base = omni_ethercat::omniFK(jac_params_, current_speed_data_ticks);
@@ -282,7 +284,7 @@ void Omnidrive::main()
 
 
         //Integrate the change of position in the wheels into the odometry
-		auto encoder_diff = current_encoder_data - old_encoder_data;
+		omni_ethercat::OmniEncVel encoder_diff = current_encoder_data - old_encoder_data;
 		current_odometry = omni_ethercat::nextOdometry(current_odometry, encoder_diff, jac_params_);
 
         //std::cout << "odometry: " << current_odometry[0] <<" " << current_odometry[1] << " " <<current_odometry[2] << std::endl;
@@ -313,7 +315,6 @@ void Omnidrive::main()
 
 		//Tell the interpolator our new goal twist
         ecat_admin.set_new_goal_twist(limited_twist_[0], limited_twist_[1], limited_twist_[2]);
-		ecat_admin.jac_params_ = jac_params_;
 
 		static omni_ethercat::Twist2d old_twist;
 
