@@ -32,7 +32,7 @@ Eigen::IOFormat CommaInitFmt2(Eigen::StreamPrecision, Eigen::DontAlignCols, ", "
 /* PDO index, subindex, size in bits */
 static ec_pdo_entry_info_t chosen_pdo_entries[] = {
         /* Write */
-                //Using 0x1601, a good fit
+        //Using 0x1601, a good fit
         {0x60ff, 0x00, 32},                            //target velocity int32
         {0x6040, 0x00, 16},                            //control word uint16
         //using 0x1607, a configurable PDO
@@ -278,7 +278,6 @@ namespace omni_ecat {
         interpolator.set_current_pose(0.0, 0.0, 0.0);
 
 
-
         while (!rt_should_exit) {
 
 
@@ -481,7 +480,6 @@ namespace omni_ecat {
 
     void EcatAdmin::ec_drives_speedcontrol() {
         std::cout << "ec_drives_speedcontrol()" << std::endl;
-
 
 
         for (auto &drive_el: drive_map) {
@@ -892,7 +890,8 @@ namespace omni_ecat {
         task_rdata_process_side.digital_inputs = EC_READ_U32(domain_pd_ + pdata_offsets.r_digital_inputs);
         task_rdata_process_side.actual_velocity = EC_READ_S32(domain_pd_ + pdata_offsets.r_actual_velocity);
         task_rdata_process_side.statusword = EC_READ_U16(domain_pd_ + pdata_offsets.r_statusword);
-        task_rdata_process_side.mode_of_operation_display = EC_READ_S8(domain_pd_ + pdata_offsets.r_mode_of_operation_display);
+        task_rdata_process_side.mode_of_operation_display = EC_READ_S8(
+                domain_pd_ + pdata_offsets.r_mode_of_operation_display);
         task_rdata_process_side.actual_torque = EC_READ_S16(domain_pd_ + pdata_offsets.r_actual_torque);
         task_rdata_process_side.elmo_status_register = EC_READ_U32(domain_pd_ + pdata_offsets.r_elmo_status_register);
         task_rdata_process_side.dc_link_voltage = EC_READ_U32(domain_pd_ + pdata_offsets.r_dc_link_voltage);
