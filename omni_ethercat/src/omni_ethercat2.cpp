@@ -53,6 +53,7 @@ private:
     std::map<std::string, unsigned int> joint_name_to_index_;
 
     void giskardCommand(const sensor_msgs::JointState &msg);
+    void stateUpdate(diagnostic_updater::DiagnosticStatusWrapper &s);
 
 
 public:
@@ -62,8 +63,8 @@ public:
 };
 
 Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(Duration(0.5)) {
-    //diagnostic_.setHardwareID("omnidrive");
-    //diagnostic_.add("Base", this, &Omnidrive::stateUpdate); //FIXME: populate and publish diagnostics
+    diagnostic_.setHardwareID("omnidrive");
+    diagnostic_.add("Base", this, &Omnidrive::stateUpdate); //FIXME: populate and publish diagnostics
     n_.param("odom_frame_id", odom_frame_id_, std::string("/odom"));
     n_.param("odom_child_frame_id", odom_child_frame_id_, std::string("/base_footprint"));
 
@@ -98,6 +99,30 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(D
     watchdog_time_ = ros::Time::now();
 
 }
+
+void Omnidrive::stateUpdate(diagnostic_updater::DiagnosticStatusWrapper &s)
+{
+    int estop = 1;
+    char drive[4] = {'4', '4', '4', '4'};
+    int num_drives = 4;
+
+    bool operational = true;
+
+    if(operational)
+        s.summary(0, "Operational");
+    else
+        s.summary(1, "Down");
+
+    for(int i=0; i < num_drives; i++)
+        s.add(std::string("status drive ") + (char) ('1' + i),
+              std::string("") + drive[i]);
+
+    s.add("Emergency Stop", (estop) ? "== pressed ==" : "released");
+
+
+}
+
+
 
 void Omnidrive::cmdArrived(const geometry_msgs::TwistStamped::ConstPtr &msg) {
 
@@ -369,7 +394,7 @@ void Omnidrive::main() {
         // process incoming messages
         ros::spinOnce();
 
-        //diagnostic_.update();
+        diagnostic_.update();
         r.sleep();
 
     }
