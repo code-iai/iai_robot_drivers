@@ -1,37 +1,37 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>omni_ethercat</name>
-  <version>0.0.1</version>
-  <description>
-    Control node for the mecanum wheel robotic base used at
-    IAI at Universitaet Bremen. It is controlled by four EtherCAT controllers
-    which in turn are controlled using the IgH EtherCAT master library.
-  </description>
+    <name>omni_ethercat</name>
+    <version>0.0.1</version>
+    <description>
+        Control node for the mecanum wheel robotic base used at
+        IAI at Universitaet Bremen. It is controlled by four EtherCAT controllers
+        which in turn are controlled using the IgH EtherCAT master library.
+    </description>
 
-  <maintainer email="georg.bartels@cs.uni-bremen.de">Georg Bartels</maintainer>
-  <maintainer email="amaldo@cs.uni-bremen.de">Alexis Maldonado</maintainer>
+    <maintainer email="georg.bartels@cs.uni-bremen.de">Georg Bartels</maintainer>
+    <maintainer email="amaldo@cs.uni-bremen.de">Alexis Maldonado</maintainer>
 
-  <license>GPL</license>
-  <author>Alexis Maldonado, Ingo Kresse</author>
+    <license>GPL</license>
+    <author>Alexis Maldonado, Ingo Kresse</author>
 
-  <author email="amaldo@cs.uni-bremen.de">Alexis Maldonado</author>
-  <author email="kresse@in.tum.de">Ingo Kresse</author>
+    <author email="amaldo@cs.uni-bremen.de">Alexis Maldonado</author>
+    <author email="kresse@in.tum.de">Ingo Kresse</author>
 
-  <buildtool_depend>catkin</buildtool_depend>
+    <buildtool_depend>catkin</buildtool_depend>
 
-  <depend>igh_eml</depend>
-  <depend>roscpp</depend>
-  <depend>eigen</depend>
-  <depend>std_msgs</depend>
-  <depend>geometry_msgs</depend>
-  <depend>tf</depend>
-  <depend>diagnostic_updater</depend>
-  <depend>iai_control_msgs</depend>
-  <depend>sensor_msgs</depend>
-  <depend>soft_runstop</depend>
-  <depend>message_runtime</depend>
-  <depend>reflexxes_type2</depend>
-  <test_depend>gtest</test_depend>
-  <test_depend>orocos_kdl</test_depend>
+    <depend>igh_eml</depend>
+    <depend>roscpp</depend>
+    <depend>eigen</depend>
+    <depend>std_msgs</depend>
+    <depend>geometry_msgs</depend>
+    <depend>tf</depend>
+    <depend>diagnostic_updater</depend>
+    <depend>iai_control_msgs</depend>
+    <depend>sensor_msgs</depend>
+    <depend>soft_runstop</depend>
+    <depend>message_runtime</depend>
+    <depend>reflexxes_type2</depend>
+    <test_depend>gtest</test_depend>
+    <test_depend>orocos_kdl</test_depend>
 
 </package>
