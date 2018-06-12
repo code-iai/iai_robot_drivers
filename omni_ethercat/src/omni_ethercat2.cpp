@@ -173,6 +173,8 @@ void Omnidrive::diagnostic_state_update(diagnostic_updater::DiagnosticStatusWrap
                drive->slave_config_state.online ? "online" : "offline",
                drive->slave_config_state.operational ? "true" : "false",
                drive->slave_config_state.al_state);
+
+        s.addf(std::string("drive ['") + std::string(name) + std::string("'] bus voltage"), "%f", drive->task_rdata_user_side.dc_link_voltage / 1000.0);
     }
 
 }
