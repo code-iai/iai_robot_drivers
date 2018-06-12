@@ -45,7 +45,7 @@ max_dy: y component of maximum allowed twist (m/s)
         source: chose for safety
         example on donbot: 1.0 (m/s)
 
-max_dtetha: tetha component of maximum allowed twist (rad/s)
+max_dtheta: theta component of maximum allowed twist (rad/s)
         source: chose for safety
         example on donbot: 3.14159 / 4.0 (45deg/s)
 

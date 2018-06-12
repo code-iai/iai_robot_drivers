@@ -42,7 +42,7 @@ private:
     std::string odom_frame_id_;
     std::string odom_child_frame_id_;
     double jac_lx_param_, jac_ly_param_, drive_constant_param_, max_wheel_tick_speed_param_;
-    double max_dx_param_, max_dy_param_, max_dtetha_param_;
+    double max_dx_param_, max_dy_param_, max_dtheta_param_;
     double js_frequency_param_, runstop_frequency_param_, watchdog_period_param_;
 
 
@@ -97,7 +97,7 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(n_), soft_runstop_handler_
 
     n_.param("max_dx", max_dx_param_, 1.0 ); // in m/s
     n_.param("max_dy", max_dy_param_, 1.0 ); // in m/s
-    n_.param("max_dtetha", max_dtetha_param_, 3.14159 / 4.0 ); // in rads/s
+    n_.param("max_dtheta", max_dtheta_param_, 3.14159 / 4.0 ); // in rads/s
 
 
     std::string odom_x_joint_name_param_, odom_y_joint_name_param_, odom_z_joint_name_param_;
@@ -117,13 +117,13 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(n_), soft_runstop_handler_
     ROS_INFO("param: %s = %f", "watchdog_period", watchdog_period_param_);
     ROS_INFO("param: %s = \"%s\"", "odom_frame_id", odom_frame_id_.c_str());
     ROS_INFO("param: %s = \"%s\"", "odom_child_frame_id", odom_child_frame_id_.c_str());
-    ROS_INFO("param: %s = %f", "jax_lx", jac_lx_param_);
-    ROS_INFO("param: %s = %f", "jax_ly", jac_ly_param_);
+    ROS_INFO("param: %s = %f", "jac_lx", jac_lx_param_);
+    ROS_INFO("param: %s = %f", "jac_ly", jac_ly_param_);
     ROS_INFO("param: %s = %f", "drive_constant", drive_constant_param_);
     ROS_INFO("param: %s = %f", "max_wheel_tick_speed", max_wheel_tick_speed_param_);
     ROS_INFO("param: %s = %f", "max_dx", max_dx_param_);
     ROS_INFO("param: %s = %f", "max_dy", max_dx_param_);
-    ROS_INFO("param: %s = %f", "max_dtetha", max_dtetha_param_);
+    ROS_INFO("param: %s = %f", "max_dtheta", max_dtheta_param_);
     ROS_INFO("param: %s = \"%s\"", "odom_x_joint_name", odom_x_joint_name_param_.c_str());
     ROS_INFO("param: %s = \"%s\"", "odom_y_joint_name", odom_y_joint_name_param_.c_str());
     ROS_INFO("param: %s = \"%s\"", "odom_z_joint_name", odom_z_joint_name_param_.c_str());
@@ -136,7 +136,7 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(n_), soft_runstop_handler_
     des_twist_ = omni_ethercat::Twist2d(0, 0, 0);
     limited_twist_ = omni_ethercat::Twist2d(0, 0, 0);
 
-    max_twist_ = omni_ethercat::Twist2d(max_dx_param_, max_dy_param_, max_dtetha_param_);
+    max_twist_ = omni_ethercat::Twist2d(max_dx_param_, max_dy_param_, max_dtheta_param_);
 
     max_wheel_speed_ = max_wheel_tick_speed_param_;
     jac_params_ = omni_ethercat::JacParams(jac_lx_param_, jac_ly_param_, drive_constant_param_);  // lx, ly, drive-constant in ticks/m
