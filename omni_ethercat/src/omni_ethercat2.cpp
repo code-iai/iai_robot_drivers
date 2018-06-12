@@ -41,6 +41,8 @@ private:
     soft_runstop::Handler soft_runstop_handler_;
     std::string odom_frame_id_;
     std::string odom_child_frame_id_;
+    double jac_lx_param_, jac_ly_param_, drive_constant_param_, max_wheel_tick_speed_param_;
+    double max_dx_param_, max_dy_param_, max_dtetha_param_;
 
     void twistCommand(const geometry_msgs::TwistStamped::ConstPtr &msg);
     void giskardCommand(const sensor_msgs::JointState &msg);
@@ -71,35 +73,47 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(n_), soft_runstop_handler_
     diagnostic_.add("boxy_omni_v1", this, &Omnidrive::diagnostic_state_update);
     n_.param("odom_frame_id", odom_frame_id_, std::string("/odom"));
     n_.param("odom_child_frame_id", odom_child_frame_id_, std::string("/base_footprint"));
+    n_.param("jac_lx",  jac_lx_param_, 0.30375 );
+    n_.param("jac_ly",  jac_ly_param_, 0.39475 );
 
-    //main odometry output using joint_states: needs support in the URDF, to have odom_x_joint, odom_y_joint, odom_z_joint
-    js_pub_ = n_.advertise<sensor_msgs::JointState>("joint_states", 1);
-
-    //Only looking for the info on these joint from the giskard message
-    joint_name_to_index_.insert(std::pair<std::string, unsigned int>("odom_x_joint", 0));
-    joint_name_to_index_.insert(std::pair<std::string, unsigned int>("odom_y_joint", 1));
-    joint_name_to_index_.insert(std::pair<std::string, unsigned int>("odom_z_joint", 2));
-
-    //initialize the twists to all zeroes
-    des_twist_ = omni_ethercat::Twist2d(0, 0, 0);
-    limited_twist_ = omni_ethercat::Twist2d(0, 0, 0);
-    max_twist_ = omni_ethercat::Twist2d(10.0, 10.0, 10.0); //FIXME: read from param
-    double max_wheel_tick_speed = 833333.0; // ticks/s : 5000 rpm/ 60s * 10000 ticks/rev //FIXME: param
-    double lx = 0.30375;
-    double ly = 0.39475;
-    //FIXME: read these settings from the parameter server
     // drive_constant = amount of ticks needed for a one meter translation (ticks/m)
     // calculated thus: 10000 (ticks/turn given by encoder) * gear ratio / ( pi * diameter)
     // diameter is 8" = 8*25.4/1000 = 0.797965m
     // circumference for that 8" wheel is = 0.638372m
     // For donbot: drive_constant = 10000*20/(3.14159*8*25.4/1000)
     //double drive_constant = 626594; // in ticks/m  For Boxy (gear ratio 40:1)
-    //for donbot: adjusting the 0.5% error in translation when moving
-    double drive_constant = 10000 * 20 / (3.14159 * 8 * 1.004 * 25.4 / 1000); // in ticks/m
+    //for donbot: adjusting the 0.4% error in translation when moving
+    n_.param("drive_constant",  drive_constant_param_,
+             10000 * 20 / (3.14159 * 8 * 1.004 * 25.4 / 1000)); // in ticks/m
+    n_.param("max_wheel_tick_speed", max_wheel_tick_speed_param_, 5000.0 / 60.0 * 10000.0 ); // ticks/s: 5000rpm / 60s * 10k ticks/rev
+
+    n_.param("max_dx", max_dx_param_, 1.0 ); // in m/s
+    n_.param("max_dy", max_dy_param_, 1.0 ); // in m/s
+    n_.param("max_dtetha", max_dtetha_param_, 1.0 ); // in rads/s
 
 
-    max_wheel_speed_ = max_wheel_tick_speed; //FIXME: read from param, specify units (rads/s?)
-    jac_params_ = omni_ethercat::JacParams(lx, ly, drive_constant);  // lx, ly, drive-constant in ticks/m
+    std::string odom_x_joint_name_param_, odom_y_joint_name_param_, odom_z_joint_name_param_;
+    n_.param("odom_x_joint_name", odom_x_joint_name_param_, std::string("odom_x_joint"));
+    n_.param("odom_y_joint_name", odom_x_joint_name_param_, std::string("odom_y_joint"));
+    n_.param("odom_z_joint_name", odom_x_joint_name_param_, std::string("odom_z_joint"));
+
+
+    //main odometry output using joint_states: needs support in the URDF, to have odom_x_joint, odom_y_joint, odom_z_joint
+    js_pub_ = n_.advertise<sensor_msgs::JointState>("joint_states", 1);
+
+    //Only looking for the info on these joint from the giskard message
+    joint_name_to_index_.insert(std::pair<std::string, unsigned int>(odom_x_joint_name_param_, 0));
+    joint_name_to_index_.insert(std::pair<std::string, unsigned int>(odom_y_joint_name_param_, 1));
+    joint_name_to_index_.insert(std::pair<std::string, unsigned int>(odom_z_joint_name_param_, 2));
+
+    //initialize the twists to all zeroes
+    des_twist_ = omni_ethercat::Twist2d(0, 0, 0);
+    limited_twist_ = omni_ethercat::Twist2d(0, 0, 0);
+
+    max_twist_ = omni_ethercat::Twist2d(max_dx_param_, max_dy_param_, max_dtetha_param_);
+
+    max_wheel_speed_ = max_wheel_tick_speed_param_;
+    jac_params_ = omni_ethercat::JacParams(jac_lx_param_, jac_ly_param_, drive_constant_param_);  // lx, ly, drive-constant in ticks/m
 
     watchdog_time_ = ros::Time::now();
 
