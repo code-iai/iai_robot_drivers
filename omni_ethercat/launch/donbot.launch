@@ -1,0 +1,31 @@
+<launch>
+    <!-- Start the EtherCAT controllers for the omnidirectional base -->
+    <node name="omnidrive" launch-prefix="with_realtime" pkg="omni_ethercat" type="omni_ethercat2" output="screen">
+      <!--remap from="~joint_states" to="base/joint_states"/>
+      <remap from="~cmd_vel" to="base/cmd_vel"/>
+      <remap from="~giskard_command" to="/whole_body_controller/velocity_cmd"/-->
+      <param name="js_frequency" type="double" value="125.0" />
+      <param name="runstop_frequency" type="double" value="10.0" />
+      <param name="watchdog_period" type="double" value="0.15" />
+      <param name="odom_frame_id" value="/odom" />
+      <param name="odom_child_frame_id" value="/base_footprint" />
+      <!-- lx and ly from CAD -->
+      <param name="jac_lx" type="double" value="0.30375" />
+      <param name="jac_ly" type="double" value="0.39475" />
+      <!-- drive_constant for donbot: 10000 * 20 / (3.14159 * 8 * 1.004 * 25.4 / 1000) 
+      10000 ticks/rev (encoder), 20:1 gear reduction, 8" wheels, 0.4% error in diameter -->
+      <param name="drive_constant" type="double" value="312049.19990204195453202445" /> 
+      <!-- motors on boxy are rated for 5000rpm, so 5000.0 / 60.0 * 10000.0 = 833333.3... -->
+      <param name="max_wheel_tick_speed" type="double" value="833333.33333333333333330000" />
+      <param name="max_dx" type="double" value="1.0" />
+      <param name="max_dy" type="double" value="1.0" />
+      <param name="max_dtheta" type="double" value="0.7853975" />
+      <param name="odom_x_joint_name" value="odom_x_joint" />
+      <param name="odom_y_joint_name" value="odom_y_joint" />
+      <param name="odom_z_joint_name" value="odom_z_joint" />
+    </node>
+
+
+</launch>
+
+
