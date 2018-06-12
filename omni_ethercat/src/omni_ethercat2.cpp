@@ -26,6 +26,7 @@
 #include <omni_ethercat/omnilib.hpp>   //library for the mecanum kinematics
 #include <omni_ethercat/ecat_iface.hpp>  //library for interfacing with the Ethercat Motor drivers
 #include <sensor_msgs/JointState.h>
+#include <ecrt.h>
 
 Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
 Eigen::IOFormat CommaInitFmt(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", ", ", "", "", " << ", ";");
@@ -41,7 +42,9 @@ private:
     std::string odom_frame_id_;
     std::string odom_child_frame_id_;
 
-    void cmdArrived(const geometry_msgs::TwistStamped::ConstPtr &msg);
+    void twistCommand(const geometry_msgs::TwistStamped::ConstPtr &msg);
+    void giskardCommand(const sensor_msgs::JointState &msg);
+
 
     //Variables to hold the desired twist
     omni_ethercat::Twist2d des_twist_;
@@ -52,8 +55,9 @@ private:
 
     std::map<std::string, unsigned int> joint_name_to_index_;
 
-    void giskardCommand(const sensor_msgs::JointState &msg);
-    void stateUpdate(diagnostic_updater::DiagnosticStatusWrapper &s);
+    void diagnostic_state_update(diagnostic_updater::DiagnosticStatusWrapper &s);
+    omni_ecat::EcatAdmin ecat_admin;
+
 
 
 public:
@@ -62,19 +66,25 @@ public:
     void main();
 };
 
-Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(Duration(0.5)) {
+Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(n_), soft_runstop_handler_(Duration(0.5)) {
     diagnostic_.setHardwareID("omnidrive");
-    diagnostic_.add("Base", this, &Omnidrive::stateUpdate); //FIXME: populate and publish diagnostics
+    diagnostic_.add("boxy_omni_v1", this, &Omnidrive::diagnostic_state_update);
     n_.param("odom_frame_id", odom_frame_id_, std::string("/odom"));
     n_.param("odom_child_frame_id", odom_child_frame_id_, std::string("/base_footprint"));
 
+    //main odometry output using joint_states: needs support in the URDF, to have odom_x_joint, odom_y_joint, odom_z_joint
     js_pub_ = n_.advertise<sensor_msgs::JointState>("joint_states", 1);
+
+    //Only looking for the info on these joint from the giskard message
+    joint_name_to_index_.insert(std::pair<std::string, unsigned int>("odom_x_joint", 0));
+    joint_name_to_index_.insert(std::pair<std::string, unsigned int>("odom_y_joint", 1));
+    joint_name_to_index_.insert(std::pair<std::string, unsigned int>("odom_z_joint", 2));
 
     //initialize the twists to all zeroes
     des_twist_ = omni_ethercat::Twist2d(0, 0, 0);
-    limited_twist_ = omni_ethercat::Twist2d(0.5, 0, 0);
-    max_twist_ = omni_ethercat::Twist2d(1.0, 1.0, 1.0); //FIXME: read from param
-    double max_wheel_tick_speed = 833333.0; // ticks/s : 5000 rpm/ 60s * 10000 ticks/rev
+    limited_twist_ = omni_ethercat::Twist2d(0, 0, 0);
+    max_twist_ = omni_ethercat::Twist2d(10.0, 10.0, 10.0); //FIXME: read from param
+    double max_wheel_tick_speed = 833333.0; // ticks/s : 5000 rpm/ 60s * 10000 ticks/rev //FIXME: param
     double lx = 0.30375;
     double ly = 0.39475;
     //FIXME: read these settings from the parameter server
@@ -91,44 +101,49 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(), soft_runstop_handler_(D
     max_wheel_speed_ = max_wheel_tick_speed; //FIXME: read from param, specify units (rads/s?)
     jac_params_ = omni_ethercat::JacParams(lx, ly, drive_constant);  // lx, ly, drive-constant in ticks/m
 
-    //Only looking for the info on these joint from the giskard message
-    joint_name_to_index_.insert(std::pair<std::string, unsigned int>("odom_x_joint", 0));
-    joint_name_to_index_.insert(std::pair<std::string, unsigned int>("odom_y_joint", 1));
-    joint_name_to_index_.insert(std::pair<std::string, unsigned int>("odom_z_joint", 2));
-
     watchdog_time_ = ros::Time::now();
 
 }
 
-void Omnidrive::stateUpdate(diagnostic_updater::DiagnosticStatusWrapper &s)
+//publish to diagnostics
+void Omnidrive::diagnostic_state_update(diagnostic_updater::DiagnosticStatusWrapper &s)
 {
-    int estop = 1;
-    char drive[4] = {'4', '4', '4', '4'};
-    int num_drives = 4;
+    bool hard_run_stop = ecat_admin.get_global_sto_state();
+    s.add("Hardware Run-Stop", (hard_run_stop) ? "released" : "== pressed ==" );
 
-    bool operational = true;
+    bool soft_run_stop = soft_runstop_handler_.getState();
+    s.add("Soft Run-Stop", (soft_run_stop) ?  "== pressed ==" : "released");
 
-    if(operational)
-        s.summary(0, "Operational");
-    else
-        s.summary(1, "Down");
+    bool zero_goal_vel = (des_twist_.norm() < 0.0001);
+    s.add("Received goal velocities equal to zero", (zero_goal_vel) ? "true" : "false" );
 
-    for(int i=0; i < num_drives; i++)
-        s.add(std::string("status drive ") + (char) ('1' + i),
-              std::string("") + drive[i]);
+    s.addf("master state", "Link is %s, %d slaves, AL states: 0x%02X",
+           ecat_admin.master_state.link_up ? "up" : "down",
+           ecat_admin.master_state.slaves_responding,
+           ecat_admin.master_state.al_states);
 
-    s.add("Emergency Stop", (estop) ? "== pressed ==" : "released");
+
+    for (auto &drive_el: ecat_admin.drive_map) {
+        auto &name = drive_el.first;
+        auto &drive = drive_el.second;
+
+        s.addf(std::string("drive ['") + std::string(name) + std::string("'] state"), "Drive is: %s, operational: %s, AL state: 0x%02X",
+               drive->slave_config_state.online ? "online" : "offline",
+               drive->slave_config_state.operational ? "true" : "false",
+               drive->slave_config_state.al_state);
+    }
 
 
 }
 
 
 
-void Omnidrive::cmdArrived(const geometry_msgs::TwistStamped::ConstPtr &msg) {
+void Omnidrive::twistCommand(const geometry_msgs::TwistStamped::ConstPtr &msg) {
 
-    //std::cout << "cmdArrived()" << std::endl;
+    //std::cout << "twistCommand()" << std::endl;
 
-    // NOTE: No need for synchronization since this is called inside spinOnce() in the main loop
+    // NOTE: No need for synchronization since the ros callbacks are called
+    // serially by calling spinOnce() in the main loop
 
     //Checking that the frame is correct
     if (msg->header.frame_id == odom_child_frame_id_) {
@@ -141,14 +156,20 @@ void Omnidrive::cmdArrived(const geometry_msgs::TwistStamped::ConstPtr &msg) {
         limited_twist_ = omni_ethercat::limitTwist(limited_twist_, jac_params_, max_wheel_speed_);
 
         if (des_twist_ != limited_twist_) {
-            ROS_WARN_STREAM_THROTTLE(0.5, "The desired twist will be limited from: " << des_twist_ << " to: "
-                                                                                     << limited_twist_);
+            ROS_WARN_STREAM_THROTTLE(1.0, "The desired twist will be limited from: " << des_twist_.format(CommaInitFmt) << " to: "
+                                                                                     << limited_twist_.format(CommaInitFmt));
         }
 
+        if ( (msg->twist.linear.z != 0.0) or (msg->twist.angular.x != 0.0) or (msg->twist.angular.y != 0.0)) {
+            ROS_WARN_STREAM_THROTTLE(1.0, "The desired twist includes velocities that can't be executed (transz, rotx, roty). They will be ignored.");
 
+        }
+
+        //pet the watchdog
         watchdog_time_ = ros::Time::now();
+
     } else {
-        ROS_ERROR_THROTTLE(0.5, "Twist command arrived expressed in a wrong frame.");
+        ROS_ERROR_STREAM_THROTTLE(1.0, "Twist command arrived expressed in a wrong frame, and will be ignored. The right frame is: " << odom_child_frame_id_);
 
     }
 
@@ -183,11 +204,11 @@ void Omnidrive::giskardCommand(const sensor_msgs::JointState &msg) {
                     des_twist_[0] = msg.velocity[i];
                     received_one_valid_command = true;
                 } else if (j == 1) {  //odom_y_joint
-                    //command for odom_x_joint
+                    //command for odom_y_joint
                     des_twist_[1] = msg.velocity[i];
                     received_one_valid_command = true;
                 } else if (j == 2) { //odom_z_joint
-                    //command for odom_x_joint
+                    //command for odom_z_joint
                     des_twist_[2] = msg.velocity[i];
                     received_one_valid_command = true;
                 }
@@ -204,10 +225,12 @@ void Omnidrive::giskardCommand(const sensor_msgs::JointState &msg) {
             //limit again if any wheel exceeds the maximum wheel speed
             limited_twist_ = omni_ethercat::limitTwist(limited_twist_, jac_params_, max_wheel_speed_);
 
+
             if (des_twist_ != limited_twist_) {
-                ROS_WARN_STREAM_THROTTLE(0.5, "The desired twist will be limited from: " << des_twist_ << " to: "
-                                                                                         << limited_twist_);
+                ROS_WARN_STREAM_THROTTLE(1.0, "The desired twist will be limited from: " << des_twist_.format(CommaInitFmt) << " to: "
+                                                                                         << limited_twist_.format(CommaInitFmt));
             }
+
 
             //pet the watchdog
             watchdog_time_ = ros::Time::now();
@@ -220,32 +243,27 @@ void Omnidrive::giskardCommand(const sensor_msgs::JointState &msg) {
 
 void Omnidrive::main() {
     double watchdog_period_param;
-    int tf_frequency, runstop_frequency, js_frequency;
+    int runstop_frequency, js_frequency;
     const int loop_frequency = 250; // 250Hz update frequency
 
-    n_.param("tf_frequency", tf_frequency, 50);
     n_.param("js_frequency", js_frequency, 125);
     n_.param("runstop_frequency", runstop_frequency, 10);
     n_.param("watchdog_period", watchdog_period_param, 0.15);
     ros::Duration watchdog_period(watchdog_period_param);
 
 
-    omni_ecat::EcatAdmin ecat_admin;
-    int init_worked = ecat_admin.ecat_init();
+    int ecat_init_worked = ecat_admin.ecat_init();
 
-    if (init_worked != 0) {
+    if (ecat_init_worked != 0) {
         ROS_ERROR("failed to initialize the ethercat bus");
         ROS_ERROR("check dmesg and try \"sudo /etc/init.d/ethercat restart\"");
         return;
     }
 
-    //tf::TransformBroadcaster transforms;
 
-    ros::Subscriber sub = n_.subscribe("cmd_vel", 10, &Omnidrive::cmdArrived, this);
-    //ros::Publisher hard_runstop_pub = n_.advertise<std_msgs::Bool>("/hard_runstop", 1);
+    ros::Subscriber sub = n_.subscribe("cmd_vel", 10, &Omnidrive::twistCommand, this);
     ros::Subscriber sub_giskard = n_.subscribe("giskard_command", 1, &Omnidrive::giskardCommand, this);
-    int tf_publish_counter = 0;
-    int tf_send_rate = loop_frequency / tf_frequency;
+    ros::Publisher hard_runstop_pub = n_.advertise<std_msgs::Bool>("/hard_runstop", 1);
 
 
     //joint_state publisher
@@ -339,22 +357,21 @@ void Omnidrive::main() {
             watchdog_time_ = ros::Time::now();
         }
 
-        //Tell the interpolator our new goal twist
-        ecat_admin.set_new_goal_twist(limited_twist_[0], limited_twist_[1], limited_twist_[2]);
 
         static omni_ethercat::Twist2d old_twist;
 
         //print if there is a new commanded velocity
-        if (old_twist != limited_twist_) {
+        if ( (old_twist != limited_twist_) and ecat_admin.get_global_sto_state() ){
             old_twist = limited_twist_;
             ROS_INFO_STREAM("Commanded twist: " << limited_twist_.format(CommaInitFmt));
+            //Tell the interpolator our new goal twist
+            ecat_admin.set_new_goal_twist(limited_twist_[0], limited_twist_[1], limited_twist_[2]);
         }
 
 
         // publish odometry readings
         if (++js_publish_counter == js_send_rate) {
 
-            // FIXME: report the actual velocity and effort values
             sensor_msgs::JointState msg;
             msg.header.stamp = time_of_odom;
 
@@ -378,18 +395,13 @@ void Omnidrive::main() {
         }
 
 
-        //    // publish hard runstop state
-        //    // FIXME: report real hard E-stop status
-        //    // in Rosie, the hard runstop was read from the ethercat drives
-        //    // in Boxy it is part of the state reported by the ELMO drives
-        //    if(++runstop_publish_counter == runstop_send_rate) {
-        //      int runstop=0;
-        //      omnidrive_status(0,0,0,0,0, &runstop);
-        //      std_msgs::Bool msg;
-        //      msg.data = (runstop != 0);
-        //      hard_runstop_pub.publish(msg);
-        //      runstop_publish_counter = 0;
-        //    }
+            // publish hard runstop state
+            if(++runstop_publish_counter == runstop_send_rate) {
+              std_msgs::Bool msg;
+              msg.data = ecat_admin.get_global_sto_state(); //true means that the drives are free to run. False is that the e-stop is active
+              hard_runstop_pub.publish(msg);
+              runstop_publish_counter = 0;
+            }
 
         // process incoming messages
         ros::spinOnce();

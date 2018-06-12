@@ -105,6 +105,8 @@ namespace omni_ecat {
                              torso_present_(false) {
 
         std::cout << "EcatAdmin()" << std::endl;
+
+
         prepare_objects_for_slaves_on_boxy();
         //print_pdo_entries();
 
@@ -184,7 +186,15 @@ namespace omni_ecat {
 
         pthread_attr_t tattr;
         struct sched_param sparam;
-        sparam.sched_priority = sched_get_priority_max(SCHED_FIFO);
+        //The priority has to be high, but not higher than the priority of the IRQ thread of the ethernet device
+        //Found it out using: NETDEVNAME=eth0; ps -A | awk "/irq\/[0-9]+-${NETDEVNAME}/ { print \$1 }" | xargs --no-run-if-empty
+        //Then using chrt -p PIDNUMBER on the returned PID number. On my test system, it was prio=50, SCHED_FIFO.
+
+        //sparam.sched_priority = sched_get_priority_max(SCHED_FIFO);
+        sparam.sched_priority = 49;
+        std::cout << "Maximum possible sched priority = " << sched_get_priority_max(SCHED_FIFO) << std::endl;
+        std::cout << "Setting Sched priority for the realtime thread to = " << sparam.sched_priority << std::endl;
+
         pthread_attr_init(&tattr);
         pthread_attr_setschedpolicy(&tattr, SCHED_FIFO);
         pthread_attr_setschedparam(&tattr, &sparam);
@@ -275,6 +285,7 @@ namespace omni_ecat {
         // Initialize the tick struct with the current time
         clock_gettime(CLOCK_REALTIME, &tick);
 
+        //initialize the interpolator's pose
         interpolator.set_current_pose(0.0, 0.0, 0.0);
 
 
@@ -295,10 +306,6 @@ namespace omni_ecat {
                 }
                 pthread_mutex_unlock(&rt_data_mutex);
             }
-
-
-
-
 
 
 
@@ -331,6 +338,23 @@ namespace omni_ecat {
 
     }
 
+
+    bool EcatAdmin::get_global_sto_state() {
+
+        bool global_sto_state = false;
+
+        for (auto &drive_el: drive_map) {
+            auto &name = drive_el.first;
+            auto &drive = drive_el.second;
+
+            global_sto_state = global_sto_state and drive->get_sto_from_status_reg();
+
+        }
+
+        return global_sto_state;
+
+    }
+
     void EcatAdmin::check_drive_state() {
         //This should be called around once a second to bring the drives up if something happens, like E-Stop
 
@@ -358,15 +382,8 @@ namespace omni_ecat {
             //printf("check_drive_state(): m[%s]: mode of operation disp: %04x\n", name.c_str(), drive->task_rdata_user_side.mode_of_operation_display);
             //printf("check_drive_state(): m[%s]: ControlWord = %04x\n", name.c_str(), drive->task_wdata_user_side.controlword);
 
-#define ELMO_STATUS_REG_STO1_BIT 14
-#define ELMO_STATUS_REG_STO2_BIT 15
-            //tested on CLI so: ethercat upload 0x1002 0 -p 0 -t uint32
-            bool sto_state = (
-                    (drive->task_rdata_user_side.elmo_status_register bitand (1 << ELMO_STATUS_REG_STO1_BIT)) and
-                    (drive->task_rdata_user_side.elmo_status_register bitand (1 << ELMO_STATUS_REG_STO2_BIT)));
+            bool sto_state = drive->get_sto_from_status_reg();
 
-            //printf("check_drive_state(): m[%s]: sto_state = %i\n", name.c_str(), sto_state);
-            //printf("check_drive_state(): m[%s]: ELMO_STATUS_REG = 0x%08x\n", name.c_str(), drive->task_rdata_user_side.elmo_status_register);
 
             if (sto_state == true) {
                 //STO lets the drives work
@@ -494,7 +511,6 @@ namespace omni_ecat {
 
     void EcatAdmin::ec_drives_poweroff() {
         std::cout << "omnidrive_poweroff()" << std::endl;
-
 
         for (auto &drive_el: drive_map) {
             auto &drive = drive_el.second;
@@ -917,6 +933,20 @@ namespace omni_ecat {
 
     void EcatELMODrive::set_domain_pd(uint8_t *domain_pd) {
         domain_pd_ = domain_pd;
+    }
+
+    bool EcatELMODrive::get_sto_from_status_reg() {
+#define ELMO_STATUS_REG_STO1_BIT 14
+#define ELMO_STATUS_REG_STO2_BIT 15
+        //tested on CLI so: ethercat upload 0x1002 0 -p 0 -t uint32
+        bool sto_state = (
+                (task_rdata_user_side.elmo_status_register bitand (1 << ELMO_STATUS_REG_STO1_BIT)) and
+                (task_rdata_user_side.elmo_status_register bitand (1 << ELMO_STATUS_REG_STO2_BIT)));
+
+        //printf("check_drive_state(): m[%s]: sto_state = %i\n", name.c_str(), sto_state);
+        //printf("check_drive_state(): m[%s]: ELMO_STATUS_REG = 0x%08x\n", name.c_str(), drive->task_rdata_user_side.elmo_status_register);
+        return sto_state;
+
     }
 
 //	  DriveTaskWriteVars::DriveTaskWriteVars(){

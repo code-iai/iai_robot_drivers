@@ -147,6 +147,8 @@ namespace omni_ecat {
 
         void set_domain_pd(uint8_t *domain_pd);
 
+        bool get_sto_from_status_reg();
+
 
         DriveTaskReadVars task_rdata_user_side;
         DriveTaskWriteVars task_wdata_user_side;
@@ -193,6 +195,9 @@ namespace omni_ecat {
         void interpolator_to_wheels();
 
         omni_ethercat::JacParams jac_params_;
+        bool get_global_sto_state();
+
+        ec_master_state_t master_state = { };
 
 
     private:
@@ -212,9 +217,6 @@ namespace omni_ecat {
         void cyclic_ecat_task();  //gets called by realtime_main once per cycle, and does the ethercat regular chores
         int cyclic_counter;
         uint64_t ecat_cycle_counter;
-
-        //FIXME: Need to add functionality for drives that need to home (like the torso one)
-        //void configure_torso_drive();
 
         void ec_drives_poweroff();
 
@@ -253,10 +255,10 @@ namespace omni_ecat {
         pthread_mutex_t rt_data_mutex;
 
         ec_master_t *ec_master = NULL;
-        ec_master_state_t master_state;// = { };
+
 
         ec_domain_t *domain1 = NULL;
-        ec_domain_state_t domain1_state;// = { };
+        ec_domain_state_t domain1_state = { };
 
         /* Process data */
         uint8_t *domain1_pd;    /* Process data memory */
