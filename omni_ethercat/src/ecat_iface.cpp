@@ -192,8 +192,8 @@ namespace omni_ecat {
 
         //sparam.sched_priority = sched_get_priority_max(SCHED_FIFO);
         sparam.sched_priority = 49;
-        std::cout << "Maximum possible sched priority = " << sched_get_priority_max(SCHED_FIFO) << std::endl;
-        std::cout << "Setting Sched priority for the realtime thread to = " << sparam.sched_priority << std::endl;
+        std::cout << "start_omni_realtime(): Maximum possible sched priority = " << sched_get_priority_max(SCHED_FIFO) << std::endl;
+        std::cout << "start_omni_realtime(): Setting Sched priority for the realtime thread to = " << sparam.sched_priority << std::endl;
 
         pthread_attr_init(&tattr);
         pthread_attr_setschedpolicy(&tattr, SCHED_FIFO);
@@ -614,9 +614,9 @@ namespace omni_ecat {
         ecrt_domain_state(domain1, &ds);
 
         if (ds.working_counter != domain1_state.working_counter)
-            printf("Domain1: WorkingCounter = %u.\n", ds.working_counter);
+            printf("check_domain1_state(): Domain1: WorkingCounter = %u.\n", ds.working_counter);
         if (ds.wc_state != domain1_state.wc_state) {
-            printf("Domain1: State = %u.\n", ds.wc_state);
+            printf("check_domain1_state(): Domain1: State = %u.\n", ds.wc_state);
 
             if (ds.wc_state == EC_WC_COMPLETE) {
                 std::cout << "check_domain1_state(): All registered process data were exchanged" << std::endl;
@@ -685,11 +685,11 @@ namespace omni_ecat {
 
         //Report if something has changed from the saved state
         if (ms.slaves_responding != master_state.slaves_responding)
-            printf("%u slave(s).\n", ms.slaves_responding);
+            printf("check_master_state(): %u slave(s).\n", ms.slaves_responding);
         if (ms.al_states != master_state.al_states)
-            printf("AL states: 0x%02X.\n", ms.al_states);
+            printf("check_master_state(): AL states: 0x%02X.\n", ms.al_states);
         if (ms.link_up != master_state.link_up)
-            printf("Link is %s.\n",
+            printf("check_master_state(): Link is %s.\n",
                    ms.link_up ? "up" : "down");
 
         //member_variable holding the state of the master after each check

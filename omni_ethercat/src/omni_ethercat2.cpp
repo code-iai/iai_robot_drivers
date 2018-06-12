@@ -89,22 +89,41 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(n_), soft_runstop_handler_
 
     n_.param("max_dx", max_dx_param_, 1.0 ); // in m/s
     n_.param("max_dy", max_dy_param_, 1.0 ); // in m/s
-    n_.param("max_dtetha", max_dtetha_param_, 1.0 ); // in rads/s
+    n_.param("max_dtetha", max_dtetha_param_, 3.14159 / 4.0 ); // in rads/s
 
 
     std::string odom_x_joint_name_param_, odom_y_joint_name_param_, odom_z_joint_name_param_;
     n_.param("odom_x_joint_name", odom_x_joint_name_param_, std::string("odom_x_joint"));
-    n_.param("odom_y_joint_name", odom_x_joint_name_param_, std::string("odom_y_joint"));
-    n_.param("odom_z_joint_name", odom_x_joint_name_param_, std::string("odom_z_joint"));
-
-
-    //main odometry output using joint_states: needs support in the URDF, to have odom_x_joint, odom_y_joint, odom_z_joint
-    js_pub_ = n_.advertise<sensor_msgs::JointState>("joint_states", 1);
+    n_.param("odom_y_joint_name", odom_y_joint_name_param_, std::string("odom_y_joint"));
+    n_.param("odom_z_joint_name", odom_z_joint_name_param_, std::string("odom_z_joint"));
 
     //Only looking for the info on these joint from the giskard message
     joint_name_to_index_.insert(std::pair<std::string, unsigned int>(odom_x_joint_name_param_, 0));
     joint_name_to_index_.insert(std::pair<std::string, unsigned int>(odom_y_joint_name_param_, 1));
     joint_name_to_index_.insert(std::pair<std::string, unsigned int>(odom_z_joint_name_param_, 2));
+
+    //Report to console the used parameters, will help catch configuration errors
+    ROS_INFO("Base node starting. The following parameters in namespace %s configure this node:", n_.getNamespace().c_str());
+    ROS_INFO("param: %s = \"%s\"", "odom_frame_id", odom_frame_id_.c_str());
+    ROS_INFO("param: %s = \"%s\"", "odom_child_frame_id", odom_child_frame_id_.c_str());
+    ROS_INFO("param: %s = %f", "jax_lx", jac_lx_param_);
+    ROS_INFO("param: %s = %f", "jax_ly", jac_ly_param_);
+    ROS_INFO("param: %s = %f", "drive_constant", drive_constant_param_);
+    ROS_INFO("param: %s = %f", "max_wheel_tick_speed", max_wheel_tick_speed_param_);
+    ROS_INFO("param: %s = %f", "max_dx", max_dx_param_);
+    ROS_INFO("param: %s = %f", "max_dy", max_dx_param_);
+    ROS_INFO("param: %s = %f", "max_dtetha", max_dtetha_param_);
+    ROS_INFO("param: %s = \"%s\"", "odom_x_joint_name", odom_x_joint_name_param_.c_str());
+    ROS_INFO("param: %s = \"%s\"", "odom_y_joint_name", odom_y_joint_name_param_.c_str());
+    ROS_INFO("param: %s = \"%s\"", "odom_z_joint_name", odom_z_joint_name_param_.c_str());
+
+
+
+
+
+
+    //main odometry output using joint_states: needs support in the URDF, to have odom_x_joint, odom_y_joint, odom_z_joint
+    js_pub_ = n_.advertise<sensor_msgs::JointState>("joint_states", 1);
 
     //initialize the twists to all zeroes
     des_twist_ = omni_ethercat::Twist2d(0, 0, 0);
