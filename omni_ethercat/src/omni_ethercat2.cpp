@@ -108,6 +108,8 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(n_), soft_runstop_handler_
 //publish to diagnostics
 void Omnidrive::diagnostic_state_update(diagnostic_updater::DiagnosticStatusWrapper &s)
 {
+    s.message = std::string("Controller running");
+
     bool hard_run_stop = ecat_admin.get_global_sto_state();
     s.add("Hardware Run-Stop", (hard_run_stop) ? "released" : "== pressed ==" );
 
@@ -132,7 +134,6 @@ void Omnidrive::diagnostic_state_update(diagnostic_updater::DiagnosticStatusWrap
                drive->slave_config_state.operational ? "true" : "false",
                drive->slave_config_state.al_state);
     }
-
 
 }
 
