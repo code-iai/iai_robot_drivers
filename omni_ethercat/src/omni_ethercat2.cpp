@@ -43,6 +43,8 @@ private:
     std::string odom_child_frame_id_;
     double jac_lx_param_, jac_ly_param_, drive_constant_param_, max_wheel_tick_speed_param_;
     double max_dx_param_, max_dy_param_, max_dtetha_param_;
+    double js_frequency_param_, runstop_frequency_param_, watchdog_period_param_;
+
 
     void twistCommand(const geometry_msgs::TwistStamped::ConstPtr &msg);
     void giskardCommand(const sensor_msgs::JointState &msg);
@@ -71,6 +73,12 @@ public:
 Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(n_), soft_runstop_handler_(Duration(0.5)) {
     diagnostic_.setHardwareID("omnidrive");
     diagnostic_.add("boxy_omni_v1", this, &Omnidrive::diagnostic_state_update);
+
+
+    n_.param("js_frequency", js_frequency_param_, 125.0);
+    n_.param("runstop_frequency", runstop_frequency_param_, 10.0);
+    n_.param("watchdog_period", watchdog_period_param_, 0.15);
+
     n_.param("odom_frame_id", odom_frame_id_, std::string("/odom"));
     n_.param("odom_child_frame_id", odom_child_frame_id_, std::string("/base_footprint"));
     n_.param("jac_lx",  jac_lx_param_, 0.30375 );
@@ -104,6 +112,9 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(n_), soft_runstop_handler_
 
     //Report to console the used parameters, will help catch configuration errors
     ROS_INFO("Base node starting. The following parameters in namespace %s configure this node:", n_.getNamespace().c_str());
+    ROS_INFO("param: %s = %f", "js_frequency", js_frequency_param_);
+    ROS_INFO("param: %s = %f", "runstop_frequency", runstop_frequency_param_);
+    ROS_INFO("param: %s = %f", "watchdog_period", watchdog_period_param_);
     ROS_INFO("param: %s = \"%s\"", "odom_frame_id", odom_frame_id_.c_str());
     ROS_INFO("param: %s = \"%s\"", "odom_child_frame_id", odom_child_frame_id_.c_str());
     ROS_INFO("param: %s = %f", "jax_lx", jac_lx_param_);
@@ -116,10 +127,6 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(n_), soft_runstop_handler_
     ROS_INFO("param: %s = \"%s\"", "odom_x_joint_name", odom_x_joint_name_param_.c_str());
     ROS_INFO("param: %s = \"%s\"", "odom_y_joint_name", odom_y_joint_name_param_.c_str());
     ROS_INFO("param: %s = \"%s\"", "odom_z_joint_name", odom_z_joint_name_param_.c_str());
-
-
-
-
 
 
     //main odometry output using joint_states: needs support in the URDF, to have odom_x_joint, odom_y_joint, odom_z_joint
@@ -276,15 +283,10 @@ void Omnidrive::giskardCommand(const sensor_msgs::JointState &msg) {
 
 
 void Omnidrive::main() {
-    double watchdog_period_param;
-    int runstop_frequency, js_frequency;
-    const int loop_frequency = 250; // 250Hz update frequency
+    //reading ros parameters in Omnidrive's constructor
+    const double loop_frequency = 250.0; // 250Hz update frequency for the main loop
 
-    n_.param("js_frequency", js_frequency, 125);
-    n_.param("runstop_frequency", runstop_frequency, 10);
-    n_.param("watchdog_period", watchdog_period_param, 0.15);
-    ros::Duration watchdog_period(watchdog_period_param);
-
+    ros::Duration watchdog_period(watchdog_period_param_);
 
     int ecat_init_worked = ecat_admin.ecat_init();
 
@@ -295,17 +297,17 @@ void Omnidrive::main() {
     }
 
 
-    ros::Subscriber sub = n_.subscribe("cmd_vel", 10, &Omnidrive::twistCommand, this);
+    ros::Subscriber sub_twist = n_.subscribe("cmd_vel", 10, &Omnidrive::twistCommand, this);
     ros::Subscriber sub_giskard = n_.subscribe("giskard_command", 1, &Omnidrive::giskardCommand, this);
     ros::Publisher hard_runstop_pub = n_.advertise<std_msgs::Bool>("/hard_runstop", 1);
 
 
     //joint_state publisher
-    int js_publish_counter = 0;
-    int js_send_rate = loop_frequency / js_frequency;
+    unsigned int js_publish_counter = 0;
+    unsigned int js_send_rate = (unsigned int)(loop_frequency / js_frequency_param_);
 
-    int runstop_publish_counter = 0;
-    int runstop_send_rate = loop_frequency / runstop_frequency;
+    unsigned int runstop_publish_counter = 0;
+    unsigned int runstop_send_rate = (unsigned int)(loop_frequency / runstop_frequency_param_);
 
     ros::Rate r(loop_frequency);
     ros::Time last_drive_check_time = ros::Time::now();

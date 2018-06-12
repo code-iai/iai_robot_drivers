@@ -1,6 +1,16 @@
 
 omni_ethercat2 uses the following parameters:
 
+
+js_frequency: frequency for the joint_states publisher (Hz)
+        example on donbot: 125.0
+
+runstop_frequency: frequency for the hard_run_stop publisher (Hz)
+        example on donbot: 10.0
+
+watchdog_period: if a valid command does not arrive in this time, vels=0 (s)
+        example on donbot: 0.15
+
 odom_frame_id: name of the odometry frame.
         source: this frame gets set by the localization relative to map
         example on donbot: "/odom"
