@@ -341,7 +341,7 @@ namespace omni_ecat {
 
     bool EcatAdmin::get_global_sto_state() {
 
-        bool global_sto_state = false;
+        bool global_sto_state = true;
 
         for (auto &drive_el: drive_map) {
             auto &name = drive_el.first;
