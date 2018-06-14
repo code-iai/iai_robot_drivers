@@ -46,8 +46,10 @@ private:
     double js_frequency_param_, runstop_frequency_param_, watchdog_period_param_;
 
 
-    void twistCommand(const geometry_msgs::TwistStamped::ConstPtr &msg);
+    void twistStampedCommand(const geometry_msgs::TwistStamped::ConstPtr &msg);
     void giskardCommand(const sensor_msgs::JointState &msg);
+    void twistCommand(const geometry_msgs::Twist::ConstPtr& msg);
+
 
 
     //Variables to hold the desired twist
@@ -180,10 +182,27 @@ void Omnidrive::diagnostic_state_update(diagnostic_updater::DiagnosticStatusWrap
 }
 
 
+//receive Twist commands for legacy software
+void Omnidrive::twistCommand(const geometry_msgs::Twist::ConstPtr& msg)
+{
 
-void Omnidrive::twistCommand(const geometry_msgs::TwistStamped::ConstPtr &msg) {
+    //just make a message of type TwistStamped and pass it to our other function
+    boost::shared_ptr<geometry_msgs::TwistStamped> ts_msg_ptr(new geometry_msgs::TwistStamped);
 
-    //std::cout << "twistCommand()" << std::endl;
+    //give it the right frame of reference
+    ts_msg_ptr->header.frame_id = odom_child_frame_id_;
+
+    ts_msg_ptr->twist.linear = msg->linear;
+    ts_msg_ptr->twist.angular = msg->angular;
+
+    twistStampedCommand(ts_msg_ptr);
+
+}
+
+
+void Omnidrive::twistStampedCommand(const geometry_msgs::TwistStamped::ConstPtr &msg) {
+
+    //std::cout << "twistStampedCommand()" << std::endl;
 
     // NOTE: No need for synchronization since the ros callbacks are called
     // serially by calling spinOnce() in the main loop
@@ -299,7 +318,8 @@ void Omnidrive::main() {
     }
 
 
-    ros::Subscriber sub_twist = n_.subscribe("cmd_vel", 10, &Omnidrive::twistCommand, this);
+    ros::Subscriber sub_twist_stamped = n_.subscribe("cmd_vel", 3, &Omnidrive::twistStampedCommand, this);
+    ros::Subscriber sub_twist = n_.subscribe("cmd_vel_twist", 3, &Omnidrive::twistCommand, this);
     ros::Subscriber sub_giskard = n_.subscribe("giskard_command", 1, &Omnidrive::giskardCommand, this);
     ros::Publisher hard_runstop_pub = n_.advertise<std_msgs::Bool>("/hard_runstop", 1);
 
