@@ -552,7 +552,11 @@ namespace omni_ecat {
     int EcatAdmin::ecat_init() {
         std::cout << "ecat_init()" << std::endl;
 
-        //TODO: Check version of the kernel module and the library match, using ecrt_version_magic()
+        if (ecrt_version_magic() != ECRT_VERSION_MAGIC) {
+            fprintf(stderr, "ecat_init(): Expecting EtherCAT API version %x but found %x.\n",
+                    ECRT_VERSION_MAGIC, ecrt_version_magic());
+            return -1;
+        }
 
         //FIXME: Does this avoid the reset after the initialization using SDOs?
         // Or we could avoid the SDO initialization altogether, and just do it after the PDO communication is up

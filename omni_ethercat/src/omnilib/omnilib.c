@@ -67,6 +67,12 @@ int omnidrive_init(void)
   int counter=0;
 
 
+    if (ecrt_version_magic() != ECRT_VERSION_MAGIC) {
+        fprintf(stderr, "Expecting EtherCAT API version %x but found %x.\n",
+                ECRT_VERSION_MAGIC, ecrt_version_magic());
+        exit(1);
+    }
+
 
   if(!start_omni_realtime(max_tick_speed))
     return -1;
