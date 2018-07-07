@@ -191,7 +191,9 @@ namespace omni_ecat {
         //Then using chrt -p PIDNUMBER on the returned PID number. On my test system, it was prio=50, SCHED_FIFO.
 
         //sparam.sched_priority = sched_get_priority_max(SCHED_FIFO);
-        sparam.sched_priority = 49;
+        //sparam.sched_priority = 49;
+        //sparam.sched_priority = sched_get_priority_max(SCHED_FIFO);
+        sparam.sched_priority = 98;
         std::cout << "start_omni_realtime(): Maximum possible sched priority = " << sched_get_priority_max(SCHED_FIFO) << std::endl;
         std::cout << "start_omni_realtime(): Setting Sched priority for the realtime thread to = " << sparam.sched_priority << std::endl;
 
@@ -199,6 +201,12 @@ namespace omni_ecat {
         pthread_attr_setschedpolicy(&tattr, SCHED_FIFO);
         pthread_attr_setschedparam(&tattr, &sparam);
         pthread_attr_setinheritsched(&tattr, PTHREAD_EXPLICIT_SCHED);
+
+        //set affinity to the chosen CPU
+        cpu_set_t cpus;
+        CPU_ZERO(&cpus);
+        CPU_SET(10, &cpus);
+        pthread_attr_setaffinity_np(&tattr, sizeof(cpu_set_t), &cpus);
 
         if (pthread_create(&rt_thread, &tattr, realtimeMainEntryFunc, this) != 0) {
             std::cerr << "start_omni_realtime(): Error: Could not create realtime thread." << std::endl;
