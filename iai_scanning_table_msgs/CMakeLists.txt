@@ -3,6 +3,7 @@ project(iai_scanning_table_msgs)
 
 find_package(catkin REQUIRED COMPONENTS message_generation actionlib_msgs std_msgs)
 
+
 ## Generate actions in the 'action' folder
   add_action_files(
     FILES
@@ -16,3 +17,4 @@ find_package(catkin REQUIRED COMPONENTS message_generation actionlib_msgs std_ms
     std_msgs  # Or other packages containing msgs
   )
 
+catkin_package()
