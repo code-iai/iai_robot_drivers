@@ -44,6 +44,7 @@ private:
     double jac_lx_param_, jac_ly_param_, drive_constant_param_, max_wheel_tick_speed_param_;
     double max_dx_param_, max_dy_param_, max_dtheta_param_;
     double js_frequency_param_, runstop_frequency_param_, watchdog_period_param_;
+    bool torso_present_param_;
 
 
     void twistStampedCommand(const geometry_msgs::TwistStamped::ConstPtr &msg);
@@ -62,7 +63,7 @@ private:
     std::map<std::string, unsigned int> joint_name_to_index_;
 
     void diagnostic_state_update(diagnostic_updater::DiagnosticStatusWrapper &s);
-    omni_ecat::EcatAdmin ecat_admin;
+    std::shared_ptr<omni_ecat::EcatAdmin> ecat_admin;
 
 
 
@@ -101,6 +102,7 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(n_), soft_runstop_handler_
     n_.param("max_dy", max_dy_param_, 1.0 ); // in m/s
     n_.param("max_dtheta", max_dtheta_param_, 3.14159 / 4.0 ); // in rads/s
 
+    n_.param("torso_present", torso_present_param_, false); // Does the base have a torso as the 5th controller?
 
     std::string odom_x_joint_name_param_, odom_y_joint_name_param_, odom_z_joint_name_param_;
     n_.param("odom_x_joint_name", odom_x_joint_name_param_, std::string("odom_x_joint"));
@@ -131,6 +133,8 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(n_), soft_runstop_handler_
     ROS_INFO("param: %s = \"%s\"", "odom_z_joint_name", odom_z_joint_name_param_.c_str());
 
 
+    ecat_admin = std::make_shared<omni_ecat::EcatAdmin>(torso_present_param_);
+
     //main odometry output using joint_states: needs support in the URDF, to have odom_x_joint, odom_y_joint, odom_z_joint
     js_pub_ = n_.advertise<sensor_msgs::JointState>("joint_states", 1);
 
@@ -152,7 +156,7 @@ void Omnidrive::diagnostic_state_update(diagnostic_updater::DiagnosticStatusWrap
 {
     s.message = std::string("Controller running");
 
-    bool hard_run_stop = ecat_admin.get_global_sto_state();
+    bool hard_run_stop = ecat_admin->get_global_sto_state();
     s.add("Hardware Run-Stop", (hard_run_stop) ? "released" : "== pressed ==" );
 
     bool soft_run_stop = soft_runstop_handler_.getState();
@@ -162,12 +166,12 @@ void Omnidrive::diagnostic_state_update(diagnostic_updater::DiagnosticStatusWrap
     s.add("Received goal velocities equal to zero", (zero_goal_vel) ? "true" : "false" );
 
     s.addf("master state", "Link is %s, %d slaves, AL states: 0x%02X",
-           ecat_admin.master_state.link_up ? "up" : "down",
-           ecat_admin.master_state.slaves_responding,
-           ecat_admin.master_state.al_states);
+           ecat_admin->master_state.link_up ? "up" : "down",
+           ecat_admin->master_state.slaves_responding,
+           ecat_admin->master_state.al_states);
 
 
-    for (auto &drive_el: ecat_admin.drive_map) {
+    for (auto &drive_el: ecat_admin->drive_map) {
         auto &name = drive_el.first;
         auto &drive = drive_el.second;
 
@@ -309,7 +313,7 @@ void Omnidrive::main() {
 
     ros::Duration watchdog_period(watchdog_period_param_);
 
-    int ecat_init_worked = ecat_admin.ecat_init();
+    int ecat_init_worked = ecat_admin->ecat_init();
 
     if (ecat_init_worked != 0) {
         ROS_ERROR("failed to initialize the ethercat bus");
@@ -336,23 +340,23 @@ void Omnidrive::main() {
 
     //Initialize encoder data to current one
     omni_ethercat::OmniEncPos old_encoder_data(
-            {double(ecat_admin.drive_map["fl"]->task_rdata_user_side.actual_position),
-             double(ecat_admin.drive_map["fr"]->task_rdata_user_side.actual_position),
-             double(ecat_admin.drive_map["bl"]->task_rdata_user_side.actual_position),
-             double(ecat_admin.drive_map["fr"]->task_rdata_user_side.actual_position)});
+            {double(ecat_admin->drive_map["fl"]->task_rdata_user_side.actual_position),
+             double(ecat_admin->drive_map["fr"]->task_rdata_user_side.actual_position),
+             double(ecat_admin->drive_map["bl"]->task_rdata_user_side.actual_position),
+             double(ecat_admin->drive_map["fr"]->task_rdata_user_side.actual_position)});
 
     //Initialize start odometry to zero (the convention is that it starts in zero where the base turns on).
     omni_ethercat::Pose2d current_odometry({0.0, 0.0, 0.0});
 
-    ecat_admin.jac_params_ = jac_params_;
+    ecat_admin->jac_params_ = jac_params_;
 
 
     while (n_.ok()) {
 
         // Check if we need to re-enable the drives at 10Hz
-        if (ecat_admin.finished_ecat_init() and (ros::Time::now() - last_drive_check_time) > ros::Duration(0.1)) {
+        if (ecat_admin->finished_ecat_init() and (ros::Time::now() - last_drive_check_time) > ros::Duration(0.1)) {
             last_drive_check_time = ros::Time::now();
-            ecat_admin.check_drive_state();
+            ecat_admin->check_drive_state();
         }
 
 
@@ -362,21 +366,21 @@ void Omnidrive::main() {
         omni_ethercat::OmniEncVel current_speed_data_ticks;
         omni_ethercat::Twist2d current_speed_base, current_speed_odom;
 
-        current_encoder_data = {double(ecat_admin.drive_map["fl"]->task_rdata_user_side.actual_position),
-                                double(ecat_admin.drive_map["fr"]->task_rdata_user_side.actual_position),
-                                double(ecat_admin.drive_map["bl"]->task_rdata_user_side.actual_position),
-                                double(ecat_admin.drive_map["br"]->task_rdata_user_side.actual_position)};
+        current_encoder_data = {double(ecat_admin->drive_map["fl"]->task_rdata_user_side.actual_position),
+                                double(ecat_admin->drive_map["fr"]->task_rdata_user_side.actual_position),
+                                double(ecat_admin->drive_map["bl"]->task_rdata_user_side.actual_position),
+                                double(ecat_admin->drive_map["br"]->task_rdata_user_side.actual_position)};
 
-        current_speed_data_ticks = {double(ecat_admin.drive_map["fl"]->task_rdata_user_side.actual_velocity),
-                                    double(ecat_admin.drive_map["fr"]->task_rdata_user_side.actual_velocity),
-                                    double(ecat_admin.drive_map["bl"]->task_rdata_user_side.actual_velocity),
-                                    double(ecat_admin.drive_map["br"]->task_rdata_user_side.actual_velocity)};
+        current_speed_data_ticks = {double(ecat_admin->drive_map["fl"]->task_rdata_user_side.actual_velocity),
+                                    double(ecat_admin->drive_map["fr"]->task_rdata_user_side.actual_velocity),
+                                    double(ecat_admin->drive_map["bl"]->task_rdata_user_side.actual_velocity),
+                                    double(ecat_admin->drive_map["br"]->task_rdata_user_side.actual_velocity)};
 
         //FIXME: figure out how to convert actual_torque to a decent unit (amps, NM, ...)
-        Eigen::Vector4d currents = {double(ecat_admin.drive_map["fl"]->task_rdata_user_side.actual_torque),
-                                    double(ecat_admin.drive_map["fr"]->task_rdata_user_side.actual_torque),
-                                    double(ecat_admin.drive_map["bl"]->task_rdata_user_side.actual_torque),
-                                    double(ecat_admin.drive_map["br"]->task_rdata_user_side.actual_torque)};
+        Eigen::Vector4d currents = {double(ecat_admin->drive_map["fl"]->task_rdata_user_side.actual_torque),
+                                    double(ecat_admin->drive_map["fr"]->task_rdata_user_side.actual_torque),
+                                    double(ecat_admin->drive_map["bl"]->task_rdata_user_side.actual_torque),
+                                    double(ecat_admin->drive_map["br"]->task_rdata_user_side.actual_torque)};
 
         //Current cartesian speed in the base reference frame
         current_speed_base = omni_ethercat::omniFK(jac_params_, current_speed_data_ticks);
@@ -419,11 +423,11 @@ void Omnidrive::main() {
         static omni_ethercat::Twist2d old_twist;
 
         //print if there is a new commanded velocity
-        if ( (old_twist != limited_twist_) and ecat_admin.get_global_sto_state() ){
+        if ( (old_twist != limited_twist_) and ecat_admin->get_global_sto_state() ){
             old_twist = limited_twist_;
             ROS_INFO_STREAM("Commanded twist: " << limited_twist_.format(CommaInitFmt));
             //Tell the interpolator our new goal twist
-            ecat_admin.set_new_goal_twist(limited_twist_[0], limited_twist_[1], limited_twist_[2]);
+            ecat_admin->set_new_goal_twist(limited_twist_[0], limited_twist_[1], limited_twist_[2]);
         }
 
 
@@ -456,7 +460,7 @@ void Omnidrive::main() {
             // publish hard runstop state
             if(++runstop_publish_counter == runstop_send_rate) {
               std_msgs::Bool msg;
-              msg.data = ecat_admin.get_global_sto_state(); //true means that the drives are free to run. False is that the e-stop is active
+              msg.data = ecat_admin->get_global_sto_state(); //true means that the drives are free to run. False is that the e-stop is active
               hard_runstop_pub.publish(msg);
               runstop_publish_counter = 0;
             }
@@ -470,8 +474,8 @@ void Omnidrive::main() {
     }
 
     //When stopping the node, make sure the velocities are zero and the drives get shutdown
-    ecat_admin.ec_drives_vel_zero();
-    ecat_admin.shutdown();
+    ecat_admin->ec_drives_vel_zero();
+    ecat_admin->shutdown();
 
 }
 

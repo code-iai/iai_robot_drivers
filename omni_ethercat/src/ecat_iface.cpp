@@ -97,12 +97,12 @@ namespace omni_ecat {
 
     }
 
-    EcatAdmin::EcatAdmin() : rt_data_mutex(PTHREAD_MUTEX_INITIALIZER),
+    EcatAdmin::EcatAdmin(bool torso_present) : rt_data_mutex(PTHREAD_MUTEX_INITIALIZER),
                              rt_should_exit(0), rt_misses(0), rt_thread(), ecat_cycle_counter(0),
                              ec_domain_running(false),
                              finished_ecat_init_(false), cyclic_counter(0),
                              realtime_cycle_period_ns(1e6), //make the realtime loop run at 1kHz
-                             torso_present_(false) {
+                             torso_present_(torso_present) {
 
         std::cout << "EcatAdmin()" << std::endl;
 
@@ -744,6 +744,7 @@ namespace omni_ecat {
         //These have memory addresses that get passed to the ethercat master, so they must stay valid
         //So we create them into shared_pointers
         //EtherCAT chain: 0:br:elmo-duo-back-A1   1:bl:elmo-duo-back-A2 2:fr:elmo-duo-front-A1  3:fl:elmo-duo-front-A2
+        //In boxy, the torso is at the end of the chain, so 4:torso:elmo_solo
 
         std::shared_ptr<EcatELMODrive> slave_fr = std::make_shared<EcatELMODrive>(std::string("fr"), 0, 2,
                                                                                   elmo_vendor_id,

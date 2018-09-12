@@ -174,7 +174,7 @@ namespace omni_ecat {
 //Helper class to control the EtherCAT master, and talk to the slaves
     class EcatAdmin {
     public:
-        EcatAdmin();
+        EcatAdmin(bool torso_present=false);
 
         int
         ecat_init();  //Should be the first thing to be called after instantiating. Check the return value to decide what to do afterwards.
