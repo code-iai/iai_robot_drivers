@@ -35,5 +35,29 @@ public:
 
 };
 
+class ReflexxesSingleDOFInterpolator {
+    int result;
+    ReflexxesAPI *RML;
+    RMLVelocityInputParameters *IP;
+    RMLVelocityOutputParameters *OP;
+    RMLVelocityFlags Flags;
+
+public:
+    ReflexxesSingleDOFInterpolator();
+
+    ~ReflexxesSingleDOFInterpolator();
+
+    bool setup();
+
+    void set_current_pos(double x);
+
+    void set_current_vel(double dx);
+
+    void set_target_vel(double dx);
+
+    void get_next_vel(double &dx);
+
+};
+
 
 #endif //OMNI_ETHERCAT_INTERPOLATOR_HPP

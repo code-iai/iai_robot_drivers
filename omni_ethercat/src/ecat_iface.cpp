@@ -205,7 +205,7 @@ namespace omni_ecat {
         //set affinity to the chosen CPU
         cpu_set_t cpus;
         CPU_ZERO(&cpus);
-        CPU_SET(10, &cpus);
+        CPU_SET(10, &cpus);  // FIXME: Make this a parameter. Now using core #10 (assuming a 6-core CPU with HT, and last two cores reserved with isolcpus)
         pthread_attr_setaffinity_np(&tattr, sizeof(cpu_set_t), &cpus);
 
         if (pthread_create(&rt_thread, &tattr, realtimeMainEntryFunc, this) != 0) {
@@ -252,6 +252,17 @@ namespace omni_ecat {
         interpolator.set_target_twist(dx, dy, dtheta);
     }
 
+    void EcatAdmin::set_new_torso_goal_vel(double dx) {
+        torso_interpolator.set_target_vel(dx);
+    }
+
+    void EcatAdmin::torso_interpolator_to_controller() {
+        double dx;
+        torso_interpolator.get_next_vel(dx);
+        drive_map["torso"]->task_wdata_user_side.target_velocity = int32_t(dx * torso_ticks_to_m_ );
+
+    }
+
     void EcatAdmin::interpolator_to_wheels() {
         // Do the Inverse Kinematics: Desired base twist -> 4 wheel velocities
         //This is a Vector holding 4 velocities, in this order of wheels: fl, fr, bl, br.
@@ -295,12 +306,14 @@ namespace omni_ecat {
 
         //initialize the interpolator's pose
         interpolator.set_current_pose(0.0, 0.0, 0.0);
+        torso_interpolator.set_current_pos(0.0);
 
 
         while (!rt_should_exit) {
 
 
             interpolator_to_wheels();
+            torso_interpolator_to_controller();
 
             cyclic_ecat_task();  //do the things that need to happen regularly in the ECAT communication cycle
 

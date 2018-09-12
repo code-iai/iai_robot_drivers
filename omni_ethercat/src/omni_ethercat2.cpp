@@ -38,6 +38,8 @@ private:
     diagnostic_updater::Updater diagnostic_;
     ros::Publisher js_pub_; //joint_states
     ros::Time watchdog_time_;
+    ros::Time torso_watchdog_time_;
+
     soft_runstop::Handler soft_runstop_handler_;
     std::string odom_frame_id_;
     std::string odom_child_frame_id_;
@@ -45,6 +47,7 @@ private:
     double max_dx_param_, max_dy_param_, max_dtheta_param_;
     double js_frequency_param_, runstop_frequency_param_, watchdog_period_param_;
     bool torso_present_param_;
+    double torso_ticks_to_m_param_;
 
 
     void twistStampedCommand(const geometry_msgs::TwistStamped::ConstPtr &msg);
@@ -59,6 +62,7 @@ private:
     omni_ethercat::Twist2d max_twist_;
     double max_wheel_speed_;
     omni_ethercat::JacParams jac_params_;
+    double des_torso_vel_;
 
     std::map<std::string, unsigned int> joint_name_to_index_;
 
@@ -98,6 +102,8 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(n_), soft_runstop_handler_
              10000 * 20 / (3.14159 * 8 * 1.004 * 25.4 / 1000)); // in ticks/m
     n_.param("max_wheel_tick_speed", max_wheel_tick_speed_param_, 5000.0 / 60.0 * 10000.0 ); // ticks/s: 5000rpm / 60s * 10k ticks/rev
 
+    n_.param("torso_ticks_to_m", torso_ticks_to_m_param_, 10000000.0); //calculated with the 10k ticks/rev and the slope of the ball screw
+
     n_.param("max_dx", max_dx_param_, 1.0 ); // in m/s
     n_.param("max_dy", max_dy_param_, 1.0 ); // in m/s
     n_.param("max_dtheta", max_dtheta_param_, 3.14159 / 4.0 ); // in rads/s
@@ -113,6 +119,10 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(n_), soft_runstop_handler_
     joint_name_to_index_.insert(std::pair<std::string, unsigned int>(odom_x_joint_name_param_, 0));
     joint_name_to_index_.insert(std::pair<std::string, unsigned int>(odom_y_joint_name_param_, 1));
     joint_name_to_index_.insert(std::pair<std::string, unsigned int>(odom_z_joint_name_param_, 2));
+
+    if (torso_present_param_) {
+        joint_name_to_index_.insert(std::pair<std::string, unsigned int>("triangle_base_joint", 3));
+    }
 
     //Report to console the used parameters, will help catch configuration errors
     ROS_INFO("Base node starting. The following parameters in namespace %s configure this node:", n_.getNamespace().c_str());
@@ -141,6 +151,7 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(n_), soft_runstop_handler_
     //initialize the twists to all zeroes
     des_twist_ = omni_ethercat::Twist2d(0, 0, 0);
     limited_twist_ = omni_ethercat::Twist2d(0, 0, 0);
+    des_torso_vel_ = 0.0;
 
     max_twist_ = omni_ethercat::Twist2d(max_dx_param_, max_dy_param_, max_dtheta_param_);
 
@@ -245,6 +256,7 @@ void Omnidrive::twistStampedCommand(const geometry_msgs::TwistStamped::ConstPtr 
 void Omnidrive::giskardCommand(const sensor_msgs::JointState &msg) {
 
     bool received_one_valid_command = false;
+    bool received_torso_command = false;
 
     //check length of arrays, if they don't match, bail out
     unsigned long len_name = msg.name.size();
@@ -277,6 +289,11 @@ void Omnidrive::giskardCommand(const sensor_msgs::JointState &msg) {
                     //command for odom_z_joint
                     des_twist_[2] = msg.velocity[i];
                     received_one_valid_command = true;
+                } else if (j == 3) {
+                    //received a command for the torso
+                    des_torso_vel_ = msg.velocity[i];
+                    received_torso_command = true;
+                    //ROS_INFO("got a torso command");
                 }
 
 
@@ -297,10 +314,14 @@ void Omnidrive::giskardCommand(const sensor_msgs::JointState &msg) {
                                                                                          << limited_twist_.format(CommaInitFmt));
             }
 
-
             //pet the watchdog
             watchdog_time_ = ros::Time::now();
 
+        }
+
+        if (received_torso_command) {
+
+            torso_watchdog_time_ = ros::Time::now();
         }
     }
 
@@ -348,8 +369,9 @@ void Omnidrive::main() {
     //Initialize start odometry to zero (the convention is that it starts in zero where the base turns on).
     omni_ethercat::Pose2d current_odometry({0.0, 0.0, 0.0});
 
+    //FIXME: Consider moving these to the constructor, bad if they are not set before we use the rest
     ecat_admin->jac_params_ = jac_params_;
-
+    ecat_admin->torso_ticks_to_m_ = torso_ticks_to_m_param_;
 
     while (n_.ok()) {
 
@@ -419,6 +441,13 @@ void Omnidrive::main() {
             watchdog_time_ = ros::Time::now();
         }
 
+        //Watchdog for the torso
+        if (((ros::Time::now() - torso_watchdog_time_) > watchdog_period) || soft_runstop_handler_.getState()) {
+            //zero the torso velocity
+            des_torso_vel_ = 0.0;
+            torso_watchdog_time_ = ros::Time::now();
+        }
+
 
         static omni_ethercat::Twist2d old_twist;
 
@@ -428,6 +457,10 @@ void Omnidrive::main() {
             ROS_INFO_STREAM("Commanded twist: " << limited_twist_.format(CommaInitFmt));
             //Tell the interpolator our new goal twist
             ecat_admin->set_new_goal_twist(limited_twist_[0], limited_twist_[1], limited_twist_[2]);
+        }
+
+        if (torso_present_param_ and ecat_admin->get_global_sto_state() ) {
+            ecat_admin->set_new_torso_goal_vel(des_torso_vel_);  //FIXME: Consider only setting this when the goal changes
         }
 
 
@@ -451,6 +484,15 @@ void Omnidrive::main() {
             msg.position.push_back(current_odometry[2]);
             msg.velocity.push_back(current_speed_odom[2]);
             msg.effort.push_back(0.0);
+
+            if (torso_present_param_) {
+                msg.name.push_back("triangle_base_joint");
+                double torso_pos = double(ecat_admin->drive_map["torso"]->task_rdata_user_side.actual_position) / torso_ticks_to_m_param_;
+                msg.position.push_back(torso_pos);
+                msg.velocity.push_back(0.0);
+                msg.effort.push_back(0.0);
+            }
+
 
             js_pub_.publish(msg);
             js_publish_counter = 0;

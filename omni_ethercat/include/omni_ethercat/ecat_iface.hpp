@@ -191,10 +191,14 @@ namespace omni_ecat {
         std::map<std::string, std::shared_ptr<EcatELMODrive>> drive_map;  //holds the name and pointer to each drive
 
         void set_new_goal_twist(double dx, double dy, double dtheta);
+        void set_new_torso_goal_vel(double dx);
 
         void interpolator_to_wheels();
+        void torso_interpolator_to_controller();
 
         omni_ethercat::JacParams jac_params_;
+        double torso_ticks_to_m_;
+
         bool get_global_sto_state();
 
         ec_master_state_t master_state = { };
@@ -212,6 +216,8 @@ namespace omni_ecat {
         int stop_omni_realtime();
 
         ReflexxesInterpolator interpolator; //Will interpolate in twist space
+        ReflexxesSingleDOFInterpolator torso_interpolator; //Interpolates in joint space
+
 
         void realtime_main();  //Function that will run in a thread with realtime priority
         void cyclic_ecat_task();  //gets called by realtime_main once per cycle, and does the ethercat regular chores

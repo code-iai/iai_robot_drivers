@@ -113,3 +113,86 @@ void ReflexxesInterpolator::get_next_twist(double &dx, double &dy, double &dthet
 bool ReflexxesInterpolator::setup() {
     return true;
 }
+
+
+ReflexxesSingleDOFInterpolator::ReflexxesSingleDOFInterpolator() : RML(NULL), IP(NULL), OP(NULL) {
+    std::cout << "ReflexxesSingleDOFInterpolator(): starting up." << std::endl;
+    RML = new ReflexxesAPI(1, CYCLE_TIME_IN_SECONDS);
+    IP = new RMLVelocityInputParameters(1);
+    OP = new RMLVelocityOutputParameters(1);
+
+    IP->CurrentPositionVector->VecData[0] = 0.0;
+
+    IP->CurrentVelocityVector->VecData[0] = 0.0;
+
+    IP->CurrentAccelerationVector->VecData[0] = 0.0;
+
+    IP->MaxAccelerationVector->VecData[0] = 0.3;
+
+    IP->MaxJerkVector->VecData[0] = 5.0;
+
+    IP->TargetVelocityVector->VecData[0] = 0.0;
+
+    IP->SelectionVector->VecData[0] = true;
+
+}
+
+ReflexxesSingleDOFInterpolator::~ReflexxesSingleDOFInterpolator() {
+    std::cout << "~ReflexxesSingleDOFInterpolator(): closing shop." << std::endl;
+    delete RML;
+    delete IP;
+    delete OP;
+}
+
+void ReflexxesSingleDOFInterpolator::set_current_pos(double x) {
+    IP->CurrentPositionVector->VecData[0] = x;
+}
+
+void ReflexxesSingleDOFInterpolator::set_current_vel(double dx) {
+    IP->CurrentVelocityVector->VecData[0] = dx;
+}
+
+void ReflexxesSingleDOFInterpolator::set_target_vel(double dx) {
+    IP->TargetVelocityVector->VecData[0] = dx;
+
+}
+
+void ReflexxesSingleDOFInterpolator::get_next_vel(double &dx) {
+    result = RML->RMLVelocity(*IP, OP, Flags);
+
+    if (result < 0) {
+        printf("An error occurred (%d).\n", result);
+        //break;
+    }
+
+    // ****************************************************************
+    // Here, the new state of motion, that is
+    //
+    // - OP->NewPositionVector
+    // - OP->NewVelocityVector
+    // - OP->NewAccelerationVector
+    //
+    // can be used as input values for lower level controllers. In the
+    // most simple case, a position controller in actuator space is
+    // used, but the computed state can be applied to many other
+    // controllers (e.g., Cartesian impedance controllers,
+    // operational space controllers).
+    // ****************************************************************
+
+
+
+    // ****************************************************************
+    // Feed the output values of the current control cycle back to
+    // input values of the next control cycle
+
+    *IP->CurrentPositionVector = *OP->NewPositionVector;
+    *IP->CurrentVelocityVector = *OP->NewVelocityVector;
+    *IP->CurrentAccelerationVector = *OP->NewAccelerationVector;
+
+    dx = OP->NewVelocityVector->VecData[0];
+    //std::cout << "new twist = [" << dx << "," << dy << "," << dtheta << "]" << std::endl;
+}
+
+bool ReflexxesSingleDOFInterpolator::setup() {
+    return true;
+}
