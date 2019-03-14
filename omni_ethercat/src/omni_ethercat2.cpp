@@ -461,7 +461,7 @@ void Omnidrive::main() {
         //print if there is a new commanded velocity
         if ( (old_twist != limited_twist_) and ecat_admin->get_global_sto_state() ){
             old_twist = limited_twist_;
-            ROS_INFO_STREAM("Commanded twist: " << limited_twist_.format(CommaInitFmt));
+            //ROS_INFO_STREAM("Commanded twist: " << limited_twist_.format(CommaInitFmt));
             //Tell the interpolator our new goal twist
             ecat_admin->set_new_goal_twist(limited_twist_[0], limited_twist_[1], limited_twist_[2]);
         }

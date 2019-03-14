@@ -284,7 +284,7 @@ namespace omni_ecat {
         if (old_vels != vels) {
             old_vels = vels;
             //ROS_INFO_STREAM("Commanded wheel velocities: " << vels.format(CommaInitFmt2));
-            std::cout << "Commanded wheel velocities: " << vels.format(CommaInitFmt2) << std::endl;
+            //std::cout << "Commanded wheel velocities: " << vels.format(CommaInitFmt2) << std::endl;
         }
 
         //Actually command the wheel velocities
@@ -313,7 +313,9 @@ namespace omni_ecat {
 
 
             interpolator_to_wheels();
-            torso_interpolator_to_controller();
+            
+            if (torso_present_)
+                torso_interpolator_to_controller();
 
             cyclic_ecat_task();  //do the things that need to happen regularly in the ECAT communication cycle
 

@@ -1,9 +1,9 @@
 <launch>
     <!-- Start the EtherCAT controllers for the omnidirectional base -->
     <node name="omnidrive" launch-prefix="with_realtime" pkg="omni_ethercat" type="omni_ethercat2" output="screen">
-      <!--remap from="~joint_states" to="base/joint_states"/>
+      <remap from="~joint_states" to="base/joint_states"/>
       <remap from="~cmd_vel" to="base/cmd_vel"/>
-      <remap from="~giskard_command" to="/whole_body_controller/velocity_cmd"/-->
+      <remap from="~giskard_command" to="/whole_body_controller/velocity_cmd"/>
       <param name="js_frequency" type="double" value="125.0" />
       <param name="runstop_frequency" type="double" value="10.0" />
       <param name="watchdog_period" type="double" value="0.15" />
