@@ -165,7 +165,7 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(n_), soft_runstop_handler_
 //publish to diagnostics
 void Omnidrive::diagnostic_state_update(diagnostic_updater::DiagnosticStatusWrapper &s)
 {
-    s.message = std::string("Controller running");
+    s.summary(diagnostic_msgs::DiagnosticStatus::OK, "Controller running");
 
     bool hard_run_stop = ecat_admin->get_global_sto_state();
     s.add("Hardware Run-Stop", (hard_run_stop) ? "released" : "== pressed ==" );
@@ -181,6 +181,7 @@ void Omnidrive::diagnostic_state_update(diagnostic_updater::DiagnosticStatusWrap
            ecat_admin->master_state.slaves_responding,
            ecat_admin->master_state.al_states);
 
+    bool all_drives_happy = true;
 
     for (auto &drive_el: ecat_admin->drive_map) {
         auto &name = drive_el.first;
@@ -191,7 +192,13 @@ void Omnidrive::diagnostic_state_update(diagnostic_updater::DiagnosticStatusWrap
                drive->slave_config_state.operational ? "true" : "false",
                drive->slave_config_state.al_state);
 
+        all_drives_happy = all_drives_happy and drive->slave_config_state.online;
+
         s.addf(std::string("drive ['") + std::string(name) + std::string("'] bus voltage"), "%f", drive->task_rdata_user_side.dc_link_voltage / 1000.0);
+    }
+
+    if (not all_drives_happy) {
+        s.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "At least one drive is not operational");
     }
 
 }
