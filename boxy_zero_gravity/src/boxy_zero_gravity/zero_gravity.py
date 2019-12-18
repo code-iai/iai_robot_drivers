@@ -7,15 +7,15 @@ from sensor_msgs.msg._Joy import Joy
 from std_srvs.srv._Trigger import Trigger, TriggerRequest
 
 BUTTONS = dict()
-BUTTONS['L2'] = 8
+BUTTONS['L2'] = 6
 BUTTONS['down'] = 6
 BUTTONS['left'] = 7
 BUTTONS['up'] = 4
 BUTTONS['right'] = 5
-BUTTONS['x'] = 14
-BUTTONS['circle'] = 13
-BUTTONS['triangle'] = 12
-BUTTONS['square'] = 15
+BUTTONS['x'] = 0
+BUTTONS['circle'] = 1
+BUTTONS['triangle'] = 2
+BUTTONS['square'] = 3
 
 class ZeroGravity(object):
     def __init__(self,
