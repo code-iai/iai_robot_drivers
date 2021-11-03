@@ -12,16 +12,18 @@ ExternalProject_Add(upstream_igh_eml    # Name for custom target
   #HG_REPOSITORY http://hg.code.sf.net/p/etherlabmaster/code         # URL of mercurial repo
   #HG_TAG f5ffd1875da1                # Mercurial branch name, commit id or tag
   #Switch to a UniBremen mirror of the upstream igh code (faster than sourceforge)
-  GIT_REPOSITORY https://gitlab.informatik.uni-bremen.de/amaldo/igh_eml_upstream_clone.git
+  #GIT_REPOSITORY https://gitlab.informatik.uni-bremen.de/amaldo/igh_eml_upstream_clone.git
+  #Using the github repositoy of ribalda
+  GIT_REPOSITORY https://github.com/ribalda/ethercat.git
   #The following TAG should correspond to the same version as your installed kernel modules
-  GIT_TAG d31eebb51ddb41acb6477e7a6b7319606a3baf15
+  GIT_TAG 97e7ee64a6b4a2e3847270797cae681b8484a7d0
   #GIT_REPOSITORY https://github.com/amaldo/Etherlab_EtherCAT_Master.git
   #GIT_TAG a3413fd8044fe10723602601417397c8524567ab
   TIMEOUT 30           # Time allowed for file download operations
 # #--Update/Patch step----------
   UPDATE_COMMAND touch <SOURCE_DIR>/config.h COMMAND mkdir -p <SOURCE_DIR>/include <SOURCE_DIR>/lib    # Source work-tree update command
 # #--Configure step-------------
-  CONFIGURE_COMMAND touch <SOURCE_DIR>/ChangeLog COMMAND autoreconf -i <SOURCE_DIR> COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --disable-kernel --enable-hrtimer --enable-tool  # Build tree configuration command
+  CONFIGURE_COMMAND touch <SOURCE_DIR>/ChangeLog COMMAND autoreconf -i <SOURCE_DIR> COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --disable-kernel --enable-hrtimer --enable-rtmutex --enable-tool  # Build tree configuration command
 # #--Build step-----------------
   BUILD_IN_SOURCE 1         # Use source dir for build dir
 # #--Install step---------------
