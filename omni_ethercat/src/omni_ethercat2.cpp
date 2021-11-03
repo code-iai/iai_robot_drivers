@@ -350,8 +350,8 @@ void Omnidrive::main() {
     }
 
 
-    ros::Subscriber sub_twist_stamped = n_.subscribe("cmd_vel", 3, &Omnidrive::twistStampedCommand, this);
-    ros::Subscriber sub_twist = n_.subscribe("cmd_vel_twist", 3, &Omnidrive::twistCommand, this);
+    ros::Subscriber sub_twist_stamped = n_.subscribe("cmd_vel", 1, &Omnidrive::twistStampedCommand, this);
+    ros::Subscriber sub_twist = n_.subscribe("cmd_vel_twist", 1, &Omnidrive::twistCommand, this);
     ros::Subscriber sub_giskard = n_.subscribe("giskard_command", 1, &Omnidrive::giskardCommand, this);
     ros::Publisher hard_runstop_pub = n_.advertise<std_msgs::Bool>("/hard_runstop", 1);
 
