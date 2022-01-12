@@ -304,7 +304,7 @@ namespace omni_ecat {
 
 
         // Initialize the tick struct with the current time
-        clock_gettime(CLOCK_REALTIME, &tick);
+        clock_gettime(CLOCK_MONOTONIC, &tick);
 
         //initialize the interpolator's pose
         interpolator.set_current_pose(0.0, 0.0, 0.0);
@@ -340,7 +340,7 @@ namespace omni_ecat {
 
 
             struct timespec now;
-            clock_gettime(CLOCK_REALTIME, &now);
+            clock_gettime(CLOCK_MONOTONIC, &now);
             //FIXME: Check that the following comparison works (int vs float comparison)
             if ((now.tv_sec + static_cast<double>(now.tv_nsec) / 1e9) >
                 (tick.tv_sec + static_cast<double>(tick.tv_nsec) / 1e9)) {
@@ -352,7 +352,7 @@ namespace omni_ecat {
                 rt_misses++;
             }
             // Sleep until end of period
-            clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &tick, NULL);
+            clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &tick, NULL);
 
         }
 
