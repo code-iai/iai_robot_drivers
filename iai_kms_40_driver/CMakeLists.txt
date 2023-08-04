@@ -6,7 +6,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_srvs
 )
 
-catkin_python_setup()
+# catkin_python_setup()
 
 catkin_package(
   #  INCLUDE_DIRS include
@@ -14,3 +14,7 @@ catkin_package(
   #  CATKIN_DEPENDS other_catkin_pkg
   #  DEPENDS system_lib
 )
+
+catkin_install_python(PROGRAMS
+	scripts/kms40_driver.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
