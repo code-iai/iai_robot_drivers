@@ -1,0 +1,19 @@
+<launch>
+  <arg name="ip" default="192.168.102.70" />
+  <arg name="port" default="1000" />
+  <arg name="tcp_timeout" default="0.5"/>
+  <arg name="publish_rate" default="500" />
+  <arg name="frame_id" default="kms40_frame_out" />
+  <arg name="topic_name" default="~wrench" />
+  <arg name="service_name" default="~set_tare" />
+
+  <node pkg="iai_kms_40_driver" type="kms40_driver.py" name="kms40_driver" output="screen">
+  	<param name="ip" value="$(arg ip)" />
+  	<param name="port" value="$(arg port)" />
+  	<param name="tcp_timeout" value="$(arg tcp_timeout)" />
+  	<param name="publish_rate" value="$(arg publish_rate)" />
+  	<param name="frame_id" value="$(arg frame_id)" />
+  	<param name="topic_name" value="$(arg topic_name)" />
+  	<param name="service_name" value="$(arg service_name)" />
+  </node>
+</launch>

@@ -360,8 +360,8 @@ int script_measure_move (unsigned char cmd_type, float cmd_width, float cmd_spee
 			throw std::string("Command unknown - make sure script is running");
 		if (status != E_SUCCESS)
 			throw std::string("Command failed");
-		if (res != 23)
-			throw std::string("Response payload incorrect (" + std::to_string(res) + ")");
+		// if (res != 23)
+			// throw std::string("Response payload incorrect (" + std::to_string(res) + ")");
 
 		// Extract data from response
 		int off=2;

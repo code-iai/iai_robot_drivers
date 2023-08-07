@@ -97,11 +97,12 @@ namespace omni_ecat {
 
     }
 
-    EcatAdmin::EcatAdmin(bool torso_present) : rt_data_mutex(PTHREAD_MUTEX_INITIALIZER),
+    EcatAdmin::EcatAdmin(bool torso_present, int cpu_core) : rt_data_mutex(PTHREAD_MUTEX_INITIALIZER),
                              rt_should_exit(0), rt_misses(0), rt_thread(), ecat_cycle_counter(0),
                              ec_domain_running(false),
                              finished_ecat_init_(false), cyclic_counter(0),
                              realtime_cycle_period_ns(1e6), //make the realtime loop run at 1kHz
+                             cpu_core_(cpu_core),
                              torso_present_(torso_present) {
 
         std::cout << "EcatAdmin()" << std::endl;
@@ -203,9 +204,10 @@ namespace omni_ecat {
         pthread_attr_setinheritsched(&tattr, PTHREAD_EXPLICIT_SCHED);
 
         //set affinity to the chosen CPU
+        std::cout << "start_omni_realtime(): Setting affinity to CPU = " << cpu_core_ << std::endl;
         cpu_set_t cpus;
         CPU_ZERO(&cpus);
-        CPU_SET(10, &cpus);  // FIXME: Make this a parameter. Now using core #10 (assuming a 6-core CPU with HT, and last two cores reserved with isolcpus)
+        CPU_SET(cpu_core_, &cpus);  // default cpu core #10 (assuming a 6-core CPU with HT, and last two cores reserved with isolcpus)
         pthread_attr_setaffinity_np(&tattr, sizeof(cpu_set_t), &cpus);
 
         if (pthread_create(&rt_thread, &tattr, realtimeMainEntryFunc, this) != 0) {
@@ -302,7 +304,7 @@ namespace omni_ecat {
 
 
         // Initialize the tick struct with the current time
-        clock_gettime(CLOCK_REALTIME, &tick);
+        clock_gettime(CLOCK_MONOTONIC, &tick);
 
         //initialize the interpolator's pose
         interpolator.set_current_pose(0.0, 0.0, 0.0);
@@ -338,7 +340,7 @@ namespace omni_ecat {
 
 
             struct timespec now;
-            clock_gettime(CLOCK_REALTIME, &now);
+            clock_gettime(CLOCK_MONOTONIC, &now);
             //FIXME: Check that the following comparison works (int vs float comparison)
             if ((now.tv_sec + static_cast<double>(now.tv_nsec) / 1e9) >
                 (tick.tv_sec + static_cast<double>(tick.tv_nsec) / 1e9)) {
@@ -350,7 +352,7 @@ namespace omni_ecat {
                 rt_misses++;
             }
             // Sleep until end of period
-            clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &tick, NULL);
+            clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &tick, NULL);
 
         }
 

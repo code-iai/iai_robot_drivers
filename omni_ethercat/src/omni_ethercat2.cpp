@@ -48,6 +48,7 @@ private:
     double js_frequency_param_, runstop_frequency_param_, watchdog_period_param_;
     bool torso_present_param_;
     double torso_ticks_to_m_param_;
+    int cpu_core_;
 
 
     void twistStampedCommand(const geometry_msgs::TwistStamped::ConstPtr &msg);
@@ -107,6 +108,7 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(n_), soft_runstop_handler_
     n_.param("max_dx", max_dx_param_, 1.0 ); // in m/s
     n_.param("max_dy", max_dy_param_, 1.0 ); // in m/s
     n_.param("max_dtheta", max_dtheta_param_, 3.14159 / 4.0 ); // in rads/s
+    n_.param("cpu_core", cpu_core_, 10 ); // cpu number
 
     n_.param("torso_present", torso_present_param_, false); // Does the base have a torso as the 5th controller?
 
@@ -129,6 +131,7 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(n_), soft_runstop_handler_
     ROS_INFO("param: %s = %f", "js_frequency", js_frequency_param_);
     ROS_INFO("param: %s = %f", "runstop_frequency", runstop_frequency_param_);
     ROS_INFO("param: %s = %f", "watchdog_period", watchdog_period_param_);
+    ROS_INFO("param: %s = %i", "cpu_core", cpu_core_);
     ROS_INFO("param: %s = \"%s\"", "odom_frame_id", odom_frame_id_.c_str());
     ROS_INFO("param: %s = \"%s\"", "odom_child_frame_id", odom_child_frame_id_.c_str());
     ROS_INFO("param: %s = %f", "jac_lx", jac_lx_param_);
@@ -143,7 +146,7 @@ Omnidrive::Omnidrive() : n_("omnidrive"), diagnostic_(n_), soft_runstop_handler_
     ROS_INFO("param: %s = \"%s\"", "odom_z_joint_name", odom_z_joint_name_param_.c_str());
 
 
-    ecat_admin = std::make_shared<omni_ecat::EcatAdmin>(torso_present_param_);
+    ecat_admin = std::make_shared<omni_ecat::EcatAdmin>(torso_present_param_, cpu_core_);
 
     //main odometry output using joint_states: needs support in the URDF, to have odom_x_joint, odom_y_joint, odom_z_joint
     js_pub_ = n_.advertise<sensor_msgs::JointState>("joint_states", 1);
@@ -350,8 +353,8 @@ void Omnidrive::main() {
     }
 
 
-    ros::Subscriber sub_twist_stamped = n_.subscribe("cmd_vel", 3, &Omnidrive::twistStampedCommand, this);
-    ros::Subscriber sub_twist = n_.subscribe("cmd_vel_twist", 3, &Omnidrive::twistCommand, this);
+    ros::Subscriber sub_twist_stamped = n_.subscribe("cmd_vel", 1, &Omnidrive::twistStampedCommand, this);
+    ros::Subscriber sub_twist = n_.subscribe("cmd_vel_twist", 1, &Omnidrive::twistCommand, this);
     ros::Subscriber sub_giskard = n_.subscribe("giskard_command", 1, &Omnidrive::giskardCommand, this);
     ros::Publisher hard_runstop_pub = n_.advertise<std_msgs::Bool>("/hard_runstop", 1);
 
