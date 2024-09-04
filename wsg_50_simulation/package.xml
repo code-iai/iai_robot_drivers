@@ -55,6 +55,7 @@
   <run_depend>iai_wsg_50_msgs</run_depend>
   <run_depend>pr2_controller_manager</run_depend>
   <run_depend>gazebo_ros</run_depend>
+  <run_depend>iai_wsg_50_description</run_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
